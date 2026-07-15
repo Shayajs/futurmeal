@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\BrightShieldAuthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
+use Livewire\Volt\Volt;
 use Tests\TestCase;
 
 class BrightShieldAuthTest extends TestCase
@@ -80,10 +81,12 @@ class BrightShieldAuthTest extends TestCase
             'onboarding_completed_at' => now(),
         ]);
 
-        $this->post('/login', [
-            'email' => 'classic@example.test',
-            'password' => 'password',
-        ])->assertRedirect(route('dashboard', absolute: false));
+        Volt::test('pages.auth.login')
+            ->set('form.email', 'classic@example.test')
+            ->set('form.password', 'password')
+            ->call('login')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
 
         $this->assertAuthenticatedAs($user);
     }

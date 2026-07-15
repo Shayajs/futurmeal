@@ -232,6 +232,25 @@ class MealPlanner extends Component
 
         $kcalChartLabels = $days->map(fn ($d) => $d->format('D d/m'))->values();
         $kcalChartData = $days->map(fn ($d) => (int) ($daySummaries[$d->toDateString()]['totals']['energy_kcal'] ?? 0))->values();
+        $kcalChartDatasets = [
+            [
+                'type' => 'bar',
+                'label' => 'Kcal planifiées',
+                'data' => $kcalChartData,
+                'backgroundColor' => 'rgba(0,255,136,0.35)',
+                'borderColor' => '#00FF88',
+                'borderWidth' => 1,
+            ],
+            [
+                'type' => 'line',
+                'label' => 'Objectif',
+                'data' => array_fill(0, $horizon, $target),
+                'borderColor' => '#8B95A5',
+                'borderWidth' => 2,
+                'pointRadius' => 0,
+                'fill' => false,
+            ],
+        ];
 
         $activeProgram = $this->programId ? Program::with('members.user')->find($this->programId) : null;
         $programMembers = $activeProgram
@@ -263,8 +282,7 @@ class MealPlanner extends Component
             'projection' => $projection,
             'horizonDays' => $horizon,
             'kcalChartLabels' => $kcalChartLabels,
-            'kcalChartData' => $kcalChartData,
-            'calorieTargetLine' => array_fill(0, $horizon, $target),
+            'kcalChartDatasets' => $kcalChartDatasets,
             'contextParams' => $contextParams,
         ]);
     }

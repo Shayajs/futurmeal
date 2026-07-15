@@ -43,6 +43,9 @@ cp docker/prod/env.prod.example .env
 
 docker compose -f docker-compose.yaml build app
 docker compose -f docker-compose.yaml up -d
+docker compose -f docker-compose.yaml exec app php artisan livewire:publish --assets
+npm ci && npm run build
+docker compose -f docker-compose.yaml exec -T nginx nginx -s reload
 ```
 
 ### Nginx Proxy Manager (Allotata)

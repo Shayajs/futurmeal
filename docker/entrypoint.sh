@@ -43,6 +43,10 @@ if [ -f "$APP_DIR/artisan" ]; then
         php artisan storage:link || true
     fi
 
+    if [ ! -f "$APP_DIR/public/vendor/livewire/manifest.json" ]; then
+        php artisan livewire:publish --assets --no-interaction || true
+    fi
+
     php artisan migrate --force || true
 fi
 

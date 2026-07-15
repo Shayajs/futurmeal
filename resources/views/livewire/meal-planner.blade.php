@@ -225,25 +225,7 @@
                 data-chart="bar"
                 data-mixed="1"
                 data-labels='@json($kcalChartLabels)'
-                data-datasets='@json([
-                    [
-                        "type" => "bar",
-                        "label" => "Kcal planifiées",
-                        "data" => $kcalChartData,
-                        "backgroundColor" => "rgba(0,255,136,0.35)",
-                        "borderColor" => "#00FF88",
-                        "borderWidth" => 1,
-                    ],
-                    [
-                        "type" => "line",
-                        "label" => "Objectif",
-                        "data" => $calorieTargetLine,
-                        "borderColor" => "#8B95A5",
-                        "borderWidth" => 2,
-                        "pointRadius" => 0,
-                        "fill" => false,
-                    ],
-                ])'>
+                data-datasets='@json($kcalChartDatasets)'
             </canvas>
         </div>
 

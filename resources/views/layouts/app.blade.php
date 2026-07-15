@@ -12,7 +12,7 @@
         @livewireStyles
     </head>
     <body>
-        <div class="min-h-screen">
+        <div class="min-h-screen flex flex-col">
             <livewire:layout.navigation />
             @if (isset($header))
                 <header class="fm-divider">
@@ -21,9 +21,10 @@
                     </div>
                 </header>
             @endif
-            <main class="py-4 sm:py-6 lg:py-10">
+            <main class="flex-1 py-4 sm:py-6 lg:py-10">
                 {{ $slot }}
             </main>
+            <x-fm.site-footer />
         </div>
         @livewireScripts
     </body>

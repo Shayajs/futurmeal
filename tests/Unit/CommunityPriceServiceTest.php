@@ -6,6 +6,7 @@ use App\Data\ProductReference;
 use App\Enums\FoodReferenceType;
 use App\Enums\PriceSource;
 use App\Models\CommunityStorePrice;
+use App\Models\FoodItem;
 use App\Models\User;
 use App\Services\Budget\CommunityPriceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,10 +77,18 @@ class CommunityPriceServiceTest extends TestCase
     public function test_brands_for_product_lists_distinct_brands(): void
     {
         $users = User::factory()->count(2)->create();
+        $food = FoodItem::create([
+            'reference_type' => FoodReferenceType::Custom,
+            'name' => 'Barre protéinée',
+            'energy_kcal' => 400,
+            'protein_g' => 20,
+            'carbs_g' => 30,
+            'fat_g' => 10,
+        ]);
         $product = new ProductReference(
             referenceType: FoodReferenceType::Custom->value,
-            referenceId: 1,
-            foodItemId: 1,
+            referenceId: $food->id,
+            foodItemId: $food->id,
             label: 'Barre protéinée',
         );
 

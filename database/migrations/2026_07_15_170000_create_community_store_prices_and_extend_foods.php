@@ -22,9 +22,9 @@ return new class extends Migration
             $table->date('observed_at');
             $table->timestamps();
 
-            $table->index(['store_brand', 'food_item_id']);
-            $table->index(['store_brand', 'reference_type', 'reference_id']);
-            $table->index(['store_brand', 'label']);
+            $table->index(['store_brand', 'food_item_id'], 'csp_brand_food_idx');
+            $table->index(['store_brand', 'reference_type', 'reference_id'], 'csp_brand_ref_idx');
+            $table->index(['store_brand', 'label'], 'csp_brand_label_idx');
         });
 
         Schema::table('budget_entries', function (Blueprint $table) {

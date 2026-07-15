@@ -1,6 +1,15 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/charte/logo-typo-wordmark.svg">
+    <img alt="FuturMeal" src="docs/charte/logo-typo-wordmark-dark.svg" width="320">
+  </picture>
+</p>
+
 # FuturMeal
 
 Planification de repas collaborative et suivi nutritionnel sport (priorité perte de graisse).
+
+**Code source :** [github.com/Shayajs/futurmeal](https://github.com/Shayajs/futurmeal)
 
 ## Stack
 

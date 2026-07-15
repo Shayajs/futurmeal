@@ -130,11 +130,6 @@
         </section>
     </main>
 
-    <footer class="fm-divider py-8">
-        <div class="fm-container flex flex-col sm:flex-row justify-between gap-4 text-caption text-fm-muted">
-            <x-fm.logo size="sm" />
-            <p>Composition nutritionnelle · Table CIQUAL © ANSES</p>
-        </div>
-    </footer>
+    <x-fm.site-footer />
 </body>
 </html>

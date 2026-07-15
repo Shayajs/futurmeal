@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
 
+Route::view('/politique-de-confidentialite', 'legal.privacy')->name('legal.privacy');
+Route::view('/cookies', 'legal.cookies')->name('legal.cookies');
+Route::view('/mentions-legales', 'legal.legal-notice')->name('legal.notice');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/onboarding', ProfileSetup::class)->name('onboarding');
 });

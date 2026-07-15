@@ -267,4 +267,93 @@ class DayEditorTest extends TestCase
 
         $this->assertDatabaseMissing('meal_plan_entries', ['label' => 'Riz cuit']);
     }
+
+    public function test_empty_search_allows_custom_food_creation_and_meal_entry(): void
+    {
+        $user = User::factory()->create();
+        $date = today()->toDateString();
+
+        Livewire::actingAs($user)
+            ->test(DayEditor::class, ['date' => $date])
+            ->call('openSlot', 'lunch')
+            ->set('foodSearch', 'Barre maison')
+            ->assertSet('canCreateCustomFood', true)
+            ->call('openCustomFoodPanel')
+            ->set('customFoodName', 'Barre maison')
+            ->set('customFoodEnergy', 420)
+            ->set('customFoodProtein', 25)
+            ->call('createCustomFood')
+            ->assertSet('selectedFoodLabel', 'Barre maison')
+            ->set('quantityG', 50)
+            ->call('addFood');
+
+        $entry = MealPlanEntry::whereDate('planned_on', $date)->first();
+        $this->assertNotNull($entry);
+        $this->assertSame(FoodReferenceType::Custom, $entry->reference_type);
+        $this->assertDatabaseHas('food_items', [
+            'user_id' => $user->id,
+            'name' => 'Barre maison',
+            'is_community' => true,
+        ]);
+    }
+
+    public function test_price_with_store_brand_contributes_to_community(): void
+    {
+        $user = User::factory()->create();
+        $food = $this->createCiqualFood();
+        $date = today()->toDateString();
+
+        Livewire::actingAs($user)
+            ->test(DayEditor::class, ['date' => $date])
+            ->call('openSlot', 'lunch')
+            ->set('storeBrand', 'Carrefour')
+            ->set('sharePriceWithCommunity', true)
+            ->call('selectFoodForAdd', FoodReferenceType::Ciqual->value, $food->id, 'Riz cuit', null)
+            ->set('pricePerKg', 6.5)
+            ->call('addFood');
+
+        $this->assertDatabaseHas('community_store_prices', [
+            'user_id' => $user->id,
+            'label' => 'Riz cuit',
+            'store_brand' => 'Carrefour',
+            'price_per_kg' => 6.5,
+        ]);
+    }
+
+    public function test_select_food_prefills_community_median(): void
+    {
+        $user = User::factory()->create();
+        $contributor = User::factory()->create();
+        $food = $this->createCiqualFood();
+
+        app(\App\Services\Budget\CommunityPriceService::class)->contribute(
+            $contributor,
+            new \App\Data\ProductReference(
+                referenceType: FoodReferenceType::Ciqual->value,
+                referenceId: $food->id,
+                label: 'Riz cuit',
+            ),
+            'Leclerc',
+            8.0,
+        );
+        app(\App\Services\Budget\CommunityPriceService::class)->contribute(
+            User::factory()->create(),
+            new \App\Data\ProductReference(
+                referenceType: FoodReferenceType::Ciqual->value,
+                referenceId: $food->id,
+                label: 'Riz cuit',
+            ),
+            'Leclerc',
+            10.0,
+        );
+
+        Livewire::actingAs($user)
+            ->test(DayEditor::class, ['date' => today()->toDateString()])
+            ->call('openSlot', 'lunch')
+            ->set('storeBrand', 'Leclerc')
+            ->call('selectFoodForAdd', FoodReferenceType::Ciqual->value, $food->id, 'Riz cuit', null)
+            ->assertSet('pricePerKg', 9.0)
+            ->assertSet('priceSource', 'community')
+            ->assertSet('priceSourceLabel', 'Communauté · Leclerc (2 relevés)');
+    }
 }

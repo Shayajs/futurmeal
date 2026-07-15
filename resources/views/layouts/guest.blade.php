@@ -21,6 +21,7 @@
                     {{ $slot }}
                 </div>
             </main>
+            <x-fm.site-footer />
         </div>
         @livewireScripts
     </body>

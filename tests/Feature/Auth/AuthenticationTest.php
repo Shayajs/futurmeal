@@ -48,7 +48,8 @@ class AuthenticationTest extends TestCase
         $component->call('login');
 
         $component
-            ->assertHasErrors()
+            ->assertHasErrors(['form.email'])
+            ->assertSee('Identifiants incorrects.')
             ->assertNoRedirect();
 
         $this->assertGuest();

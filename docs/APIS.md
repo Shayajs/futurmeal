@@ -201,11 +201,28 @@ FuturMeal normalise tous les prix vers **€/kg** pour alimenter `budget_entries
 
 ### Stratégie FuturMeal
 
-1. **Priorité prix perso** : `budget_entries` de l'utilisateur (référence aliment ou label)
-2. **Fallback Open Prices** : si code-barres disponible (`food_items.external_id`)
-3. **Magasin préféré** : `user_profiles.open_prices_location_id` (réglages budget)
-4. **Sans magasin** : médiane des 5 relevés les plus récents (tous magasins)
-5. **Cache** : 24 h par `{barcode}:{location_id|all}`
+1. **Priorité prix perso par enseigne** : `budget_entries.store_brand` (ex. Leclerc)
+2. **Prix perso global** : `budget_entries` sans enseigne (référence aliment ou label)
+3. **Prix communautaires** : médiane des contributions récentes (`community_store_prices`, 90 jours)
+4. **Fallback Open Prices** : si code-barres disponible (`food_items.external_id`)
+5. **Magasin préféré** : `user_profiles.open_prices_location_id` (réglages budget)
+6. **Sans magasin** : médiane des 5 relevés les plus récents (tous magasins)
+7. **Cache Open Prices** : 24 h par `{barcode}:{location_id|all}`
+
+### Prix communautaires (participatif)
+
+FuturMeal agrège les prix saisis par les utilisateurs **par enseigne** (marque OSM : Carrefour, Leclerc…).
+
+| Table | Rôle |
+|-------|------|
+| `community_store_prices` | Contribution utilisateur (€/kg, enseigne, date constat) |
+| `budget_entries.store_brand` | Prix perso optionnel par enseigne |
+
+- **Agrégation** : médiane des relevés des 90 derniers jours (min. 1 contribution)
+- **Contribution** : lors de l'ajout d'un aliment au planificateur, case « Partager avec la communauté » (cochée par défaut)
+- **UI** : badge « Communauté · {enseigne} (N relevés) » ; liste des contributions dans les réglages budget
+
+Pas de POST vers l'API Open Prices en MVP — données stockées localement uniquement.
 
 ### Configuration
 

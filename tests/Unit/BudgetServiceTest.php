@@ -180,4 +180,92 @@ class BudgetServiceTest extends TestCase
         $this->assertSame(PriceSource::OpenPrices, $resolution->source);
         $this->assertEquals(10.0, $resolution->pricePerKg);
     }
+
+    public function test_resolve_price_prefers_brand_personal_over_global_and_community(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $food = FoodItem::create([
+            'reference_type' => FoodReferenceType::Custom,
+            'name' => 'Barre',
+            'energy_kcal' => 400,
+            'protein_g' => 20,
+            'carbs_g' => 30,
+            'fat_g' => 10,
+        ]);
+
+        BudgetEntry::create([
+            'user_id' => $user->id,
+            'label' => 'Barre',
+            'food_item_id' => $food->id,
+            'reference_type' => FoodReferenceType::Custom,
+            'reference_id' => $food->id,
+            'price_per_kg' => 9.0,
+            'store_brand' => 'Leclerc',
+        ]);
+
+        BudgetEntry::create([
+            'user_id' => $user->id,
+            'label' => 'Barre',
+            'food_item_id' => $food->id,
+            'reference_type' => FoodReferenceType::Custom,
+            'reference_id' => $food->id,
+            'price_per_kg' => 11.0,
+        ]);
+
+        app(\App\Services\Budget\CommunityPriceService::class)->contribute(
+            $other,
+            new \App\Data\ProductReference(
+                referenceType: FoodReferenceType::Custom->value,
+                referenceId: $food->id,
+                foodItemId: $food->id,
+                label: 'Barre',
+            ),
+            'Leclerc',
+            7.0,
+        );
+
+        $brandResolution = $this->service->resolvePrice(
+            $user,
+            FoodReferenceType::Custom->value,
+            $food->id,
+            'Barre',
+            null,
+            null,
+            'Leclerc',
+        );
+
+        $this->assertSame(9.0, $brandResolution->pricePerKg);
+        $this->assertSame(PriceSource::User, $brandResolution->source);
+
+        BudgetEntry::where('user_id', $user->id)->where('store_brand', 'Leclerc')->delete();
+
+        $globalBeforeCommunity = $this->service->resolvePrice(
+            $user,
+            FoodReferenceType::Custom->value,
+            $food->id,
+            'Barre',
+            null,
+            null,
+            'Leclerc',
+        );
+
+        $this->assertSame(11.0, $globalBeforeCommunity->pricePerKg);
+        $this->assertSame(PriceSource::User, $globalBeforeCommunity->source);
+
+        BudgetEntry::where('user_id', $user->id)->whereNull('store_brand')->delete();
+
+        $communityResolution = $this->service->resolvePrice(
+            $user,
+            FoodReferenceType::Custom->value,
+            $food->id,
+            'Barre',
+            null,
+            null,
+            'Leclerc',
+        );
+
+        $this->assertSame(7.0, $communityResolution->pricePerKg);
+        $this->assertSame(PriceSource::Community, $communityResolution->source);
+    }
 }

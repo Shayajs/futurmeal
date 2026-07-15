@@ -33,4 +33,18 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
     }
+
+    public function test_registration_normalizes_uppercase_email(): void
+    {
+        $component = Volt::test('pages.auth.register')
+            ->set('name', 'Test User')
+            ->set('email', 'Test@Example.COM')
+            ->set('password', 'password')
+            ->set('password_confirmation', 'password');
+
+        $component->call('register');
+
+        $component->assertHasNoErrors()->assertRedirect(route('dashboard', absolute: false));
+        $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
+    }
 }

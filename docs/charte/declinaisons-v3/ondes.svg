@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+      <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/> <defs>
+    <mask id="s-ondes">
+      <ellipse cx="256" cy="256" rx="85.61" ry="97.28" fill="#fff"/>
+      <path d="M 256 189.85
+      Q 291.95 256 256 322.15" fill="none" stroke="#000" stroke-width="32.53" stroke-linecap="round"/>
+    </mask>
+  </defs> <path d="M 102.4 256 A 153.6 153.6 0 0 1 409.6 256" fill="none" stroke="#00FF88" stroke-width="16.38" stroke-linecap="round" opacity="1"/><path d="M 40.96 256 A 215.04 215.04 0 0 1 471.04 256" fill="none" stroke="#8B95A5" stroke-width="13.31" stroke-linecap="round" opacity="0.35"/> <g transform="rotate(-16 256 256)">
+      <ellipse cx="256" cy="256" rx="85.61" ry="97.28" fill="#00FF88" mask="url(#s-ondes)"/>
+    </g>
+</svg>

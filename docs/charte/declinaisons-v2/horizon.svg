@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+    <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/>
+  <defs>
+    <mask id="seed-horizon">
+      <ellipse cx="256" cy="296.96" rx="125.34" ry="174.08" fill="#fff"/>
+      <path d="M 256 171.62 Q 312.4 296.96 256 422.3" fill="none" stroke="#000" stroke-width="37.6" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <path d="M 92.16 542.72
+          Q 256 481.28 419.84 409.6" fill="none" stroke="#8B95A5" stroke-width="8.19" stroke-linecap="round" opacity="0.45"/>
+  <path d="M 92.16 542.72
+          Q 256 481.28 419.84 409.6" fill="none" stroke="#00FF88" stroke-width="11.26" stroke-linecap="round"/>
+  <polygon points="419.84,409.6 378.88,440.32 399.36,378.88" fill="#00FF88"/>
+  <g transform="rotate(-18 256 296.96)">
+      <ellipse cx="256" cy="296.96" rx="125.34" ry="174.08" fill="#00FF88" mask="url(#seed-horizon)"/>
+    </g>
+</svg>

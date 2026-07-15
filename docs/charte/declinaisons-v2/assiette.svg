@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+    <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/>
+  <defs>
+    <mask id="seed-assiette">
+      <ellipse cx="256" cy="266.24" rx="125.34" ry="174.08" fill="#fff"/>
+      <path d="M 256 140.9 Q 312.4 266.24 256 391.58" fill="none" stroke="#000" stroke-width="37.6" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <path d="M 90.62 334.34
+          A 194.56 194.56 0 1 1 421.38 334.34" fill="none" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 90.62 334.34
+          A 194.56 194.56 0 1 1 421.38 334.34" fill="none" stroke="#00FF88" stroke-width="11.26" stroke-linecap="round" stroke-dasharray="214.02 428.03" opacity="0.9"/>
+  <g transform="rotate(-18 256 266.24)">
+      <ellipse cx="256" cy="266.24" rx="125.34" ry="174.08" fill="#00FF88" mask="url(#seed-assiette)"/>
+    </g>
+</svg>

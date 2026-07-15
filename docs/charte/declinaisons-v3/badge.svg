@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+      <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/> <defs>
+    <mask id="s-badge">
+      <ellipse cx="256" cy="256" rx="85.61" ry="97.28" fill="#fff"/>
+      <path d="M 256 189.85
+      Q 291.95 256 256 322.15" fill="none" stroke="#000" stroke-width="32.53" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <rect x="97.28" y="122.88" width="317.44" height="266.24" rx="81.92"
+    fill="none" stroke="#8B95A5" stroke-width="10.44" opacity="0.3"/>
+  <rect x="97.28" y="122.88" width="317.44" height="266.24" rx="81.92"
+    fill="none" stroke="#00FF88" stroke-width="17.41" stroke-dasharray="174.59 634.88" stroke-linecap="round"/>
+  <g transform="rotate(-16 256 256)">
+      <ellipse cx="256" cy="256" rx="85.61" ry="97.28" fill="#00FF88" mask="url(#s-badge)"/>
+    </g>
+</svg>

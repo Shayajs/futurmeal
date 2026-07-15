@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FuturMeal">
+  <defs>
+    <mask id="seed-seed">
+      <ellipse cx="256" cy="276.48" rx="117.96" ry="163.84" fill="#fff"/>
+      <path d="M 256 158.52 Q 309.08 276.48 256 394.44" fill="none" stroke="#000" stroke-width="35.39" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <g transform="rotate(-18 256 276.48)">
+      <ellipse cx="256" cy="276.48" rx="117.96" ry="163.84" fill="#00FF88" mask="url(#seed-seed)"/>
+    </g>
+</svg>

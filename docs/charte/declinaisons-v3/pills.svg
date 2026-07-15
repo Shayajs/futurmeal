@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+      <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/> <defs>
+    <mask id="s-pills">
+      <ellipse cx="286.72" cy="256" rx="85.61" ry="97.28" fill="#fff"/>
+      <path d="M 286.72 189.85
+      Q 322.67 256 286.72 322.15" fill="none" stroke="#000" stroke-width="32.53" stroke-linecap="round"/>
+    </mask>
+  </defs> <rect x="61.44" y="153.6" width="92.16" height="28.16" rx="14.08" fill="#8B95A5" opacity="0.45"/><rect x="61.44" y="225.28" width="122.88" height="28.16" rx="14.08" fill="#00FF88" opacity="1"/><rect x="61.44" y="296.96" width="81.92" height="28.16" rx="14.08" fill="#8B95A5" opacity="0.45"/> <g transform="rotate(-16 286.72 256)">
+      <ellipse cx="286.72" cy="256" rx="85.61" ry="97.28" fill="#00FF88" mask="url(#s-pills)"/>
+    </g>
+</svg>

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+      <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/> <defs>
+    <mask id="s-fm">
+      <ellipse cx="327.68" cy="337.92" rx="72.77" ry="82.69" fill="#fff"/>
+      <path d="M 327.68 281.69
+      Q 358.24 337.92 327.68 394.15" fill="none" stroke="#000" stroke-width="27.65" stroke-linecap="round"/>
+    </mask>
+  </defs> <path d="M 143.36 194.56
+          L 143.36 378.88
+          M 143.36 276.48
+          L 245.76 276.48" fill="none" stroke="#FFFFFF" stroke-width="33.28" stroke-linecap="round"/> <path d="M 245.76 378.88
+          L 245.76 194.56
+          L 307.2 307.2
+          L 368.64 194.56
+          L 368.64 378.88"
+          fill="none" stroke="#FFFFFF" stroke-width="33.28" stroke-linecap="round" stroke-linejoin="round"/> <g transform="rotate(-16 327.68 337.92)">
+      <ellipse cx="327.68" cy="337.92" rx="72.77" ry="82.69" fill="#00FF88" mask="url(#s-fm)"/>
+    </g>
+</svg>

@@ -1,0 +1,44 @@
+:root {
+    /* Backgrounds — ref. planche officielle v2 */
+    --fm-bg: #0B0F19;
+    --fm-surface: #12182A;
+    --fm-surface-elevated: #1A2238;
+    --fm-border: #1E2A3D;
+    --fm-border-strong: #2A3850;
+
+    /* Brand — Electric Green */
+    --fm-primary: #00FF88;
+    --fm-primary-hover: #00E67A;
+    --fm-primary-muted: rgba(0, 255, 136, 0.12);
+    --fm-accent: #FF6D00;
+    --fm-accent-hover: #E65100;
+
+    /* Text */
+    --fm-text: #FFFFFF;
+    --fm-text-body: #C8D0DC;
+    --fm-muted: #8B95A5;
+    --fm-disabled: #5A6474;
+
+    /* Nutrition semantics */
+    --fm-protein: #00FF88;
+    --fm-carbs: #4A90D9;
+    --fm-fat: #FF6D00;
+    --fm-kcal: #00BFA5;
+    --fm-warning: #FFB300;
+    --fm-danger: #FF5252;
+
+    /* Radius */
+    --fm-radius-card: 1rem;
+    --fm-radius-btn: 0.75rem;
+
+    /* Shadows */
+    --fm-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
+    --fm-shadow-glow: 0 0 48px rgba(0, 255, 136, 0.14);
+
+    /* Layout responsive */
+    --fm-nav-height: 3.5rem;
+    --fm-touch-min: 2.75rem;
+    --fm-container-max: 72rem;
+    --fm-container-wide-max: 80rem;
+    --fm-safe-bottom: env(safe-area-inset-bottom, 0px);
+}

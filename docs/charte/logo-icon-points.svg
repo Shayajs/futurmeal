@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+      <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/> <defs>
+    <mask id="s-points">
+      <ellipse cx="256" cy="296.96" rx="110.39" ry="125.44" fill="#fff"/>
+      <path d="M 256 211.66
+      Q 302.36 296.96 256 382.26" fill="none" stroke="#000" stroke-width="41.95" stroke-linecap="round"/>
+    </mask>
+  </defs> <circle cx="175.72" cy="125.05" r="20.48" fill="#0055A4"/><circle cx="256" cy="102.4" r="26.62" fill="#FFFFFF"/><circle cx="336.28" cy="125.05" r="20.48" fill="#EF4135"/> <g transform="rotate(-16 256 296.96)">
+      <ellipse cx="256" cy="296.96" rx="110.39" ry="125.44" fill="#00FF88" mask="url(#s-points)"/>
+    </g>
+</svg>

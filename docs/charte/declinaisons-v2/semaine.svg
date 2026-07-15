@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+    <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/>
+  <defs>
+    <mask id="seed-semaine">
+      <ellipse cx="256" cy="266.24" rx="117.96" ry="163.84" fill="#fff"/>
+      <path d="M 256 148.28 Q 309.08 266.24 256 384.2" fill="none" stroke="#000" stroke-width="35.39" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <circle cx="256" cy="266.24" r="204.8" fill="none" stroke="#8B95A5" stroke-width="6.14" opacity="0.25"/>
+  <line x1="256" y1="61.44" x2="256" y2="30.72" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round"/><line x1="416.12" y1="138.55" x2="440.14" y2="119.4" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round"/><line x1="455.67" y1="311.81" x2="485.62" y2="318.65" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round"/><line x1="344.86" y1="450.76" x2="358.19" y2="478.44" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round"/><line x1="167.14" y1="450.76" x2="153.81" y2="478.44" stroke="#00FF88" stroke-width="14.34" stroke-linecap="round"/><line x1="56.33" y1="311.81" x2="26.38" y2="318.65" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round"/><line x1="95.88" y1="138.55" x2="71.86" y2="119.4" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round"/>
+  <g transform="rotate(-18 256 266.24)">
+      <ellipse cx="256" cy="266.24" rx="117.96" ry="163.84" fill="#00FF88" mask="url(#seed-semaine)"/>
+    </g>
+</svg>

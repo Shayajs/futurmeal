@@ -1,0 +1,113 @@
+# FuturMeal — production
+#
+# Démarrage :
+#   cp docker/prod/env.prod.example .env
+#   docker compose -f docker-compose.yaml build app
+#   docker compose -f docker-compose.yaml up -d
+
+name: futurmeal-prod
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.prod
+    image: futurmeal-app-prod:${FUTURMEAL_IMAGE_TAG:-latest}
+    container_name: futurmeal_app
+    user: "1000:1000"
+    restart: unless-stopped
+    working_dir: /var/www/html
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      HOME: /var/www/html/storage/psysh
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - futurmeal-internal
+
+  nginx:
+    image: nginx:alpine
+    container_name: futurmeal_nginx
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/futurmeal.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    networks:
+      - futurmeal-internal
+      - laravel_net
+
+  queue:
+    image: futurmeal-app-prod:${FUTURMEAL_IMAGE_TAG:-latest}
+    pull_policy: never
+    container_name: futurmeal_queue
+    user: "1000:1000"
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan queue:work database --sleep=3 --tries=3 --timeout=120 --max-time=3600
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      HOME: /var/www/html/storage/psysh
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - app
+      - db
+    networks:
+      - futurmeal-internal
+
+  scheduler:
+    image: futurmeal-app-prod:${FUTURMEAL_IMAGE_TAG:-latest}
+    pull_policy: never
+    container_name: futurmeal_scheduler
+    user: "1000:1000"
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan schedule:work
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      HOME: /var/www/html/storage/psysh
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - app
+      - db
+    networks:
+      - futurmeal-internal
+
+  db:
+    image: mariadb:11.4
+    container_name: futurmeal_db
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: "${DB_DATABASE:-futurmeal}"
+      MARIADB_ROOT_PASSWORD: "${DB_PASSWORD:-futurmeal_secret}"
+    volumes:
+      - futurmeal-db-data:/var/lib/mysql
+    networks:
+      - futurmeal-internal
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+networks:
+  futurmeal-internal:
+    driver: bridge
+  laravel_net:
+    external: true
+    name: www_laravel_net
+
+volumes:
+  futurmeal-db-data:

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112.64" fill="#0B0F19"/>
+    <rect x="30.72" y="30.72" width="450.56" height="450.56" rx="101.38" fill="#12182A"/>
+  <defs>
+    <mask id="seed-futur">
+      <ellipse cx="256" cy="266.24" rx="117.96" ry="163.84" fill="#fff"/>
+      <path d="M 256 148.28 Q 309.08 266.24 256 384.2" fill="none" stroke="#000" stroke-width="35.39" stroke-linecap="round"/>
+    </mask>
+  </defs>
+  <path d="M 40.96 122.88 L 137.73 266.24 L 40.96 409.6" fill="none" stroke="#00FF88" stroke-width="12.29" stroke-linecap="round" stroke-linejoin="round"/><path d="M 471.04 122.88 L 374.27 266.24 L 471.04 409.6" fill="none" stroke="#8B95A5" stroke-width="9.22" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+  <g transform="rotate(-18 256 266.24)">
+      <ellipse cx="256" cy="266.24" rx="117.96" ry="163.84" fill="#00FF88" mask="url(#seed-futur)"/>
+    </g>
+</svg>

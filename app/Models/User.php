@@ -12,7 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'onboarding_completed_at', 'friend_code'])]
+#[Fillable(['name', 'email', 'password', 'onboarding_completed_at', 'friend_code', 'brightshell_id', 'brightshield_linked_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -24,6 +24,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'onboarding_completed_at' => 'datetime',
+            'brightshield_linked_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

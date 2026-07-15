@@ -19,8 +19,14 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+    # shield.brightshell.test résout souvent vers 127.0.0.1 dans le conteneur ;
+    # on le force vers la machine hôte (NPM) pour les appels token/userinfo.
+    extra_hosts:
+      - "shield.brightshell.test:host-gateway"
+      - "host.docker.internal:host-gateway"
     networks:
       - futurmeal-net
+      - dev_gateway_net
 
   nginx:
     image: nginx:alpine

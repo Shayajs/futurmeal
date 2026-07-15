@@ -71,4 +71,17 @@ new #[Layout('layouts.guest')] class extends Component
             <x-primary-button>Créer le compte</x-primary-button>
         </div>
     </form>
+
+    @if (filled(config('services.brightshield.client_id')))
+        <div class="relative py-2">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-fm-border"></div>
+            </div>
+            <div class="relative flex justify-center text-xs uppercase tracking-wide">
+                <span class="bg-fm-panel px-2 text-fm-muted">ou</span>
+            </div>
+        </div>
+
+        <x-brightshield-button label="S'inscrire avec BrightShell" />
+    @endif
 </div>

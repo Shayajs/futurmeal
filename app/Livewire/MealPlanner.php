@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Enums\GoalType;
 use App\Models\MealPlanEntry;
 use App\Models\Program;
 use App\Models\User;
@@ -76,7 +77,8 @@ class MealPlanner extends Component
         PlanViewContextService $planContext,
         MealPlannerService $planner,
     ): void {
-        $this->weekStart = Carbon::parse($this->weekStart)->subWeek()->toDateString();
+        $step = $this->periodLength();
+        $this->weekStart = Carbon::parse($this->weekStart)->subDays($step)->toDateString();
         $this->resolvePlan($programPlan, $planContext, $planner);
     }
 
@@ -85,8 +87,18 @@ class MealPlanner extends Component
         PlanViewContextService $planContext,
         MealPlannerService $planner,
     ): void {
-        $this->weekStart = Carbon::parse($this->weekStart)->addWeek()->toDateString();
+        $step = $this->periodLength();
+        $this->weekStart = Carbon::parse($this->weekStart)->addDays($step)->toDateString();
         $this->resolvePlan($programPlan, $planContext, $planner);
+    }
+
+    private function periodLength(): int
+    {
+        if ($this->programId) {
+            return 7;
+        }
+
+        return Auth::user()->profile?->planning_horizon_days ?? 7;
     }
 
     public function toggleInvitePanel(): void
@@ -168,11 +180,12 @@ class MealPlanner extends Component
         $user = Auth::user();
         $context = $planContext->resolve($user, $this->viewUserId, $this->programId);
         $start = Carbon::parse($this->weekStart);
-        $days = collect(range(0, 6))->map(fn ($i) => $start->copy()->addDays($i));
+        $horizon = $this->programId ? 7 : ($user->profile?->planning_horizon_days ?? 7);
+        $days = collect(range(0, $horizon - 1))->map(fn ($i) => $start->copy()->addDays($i));
 
         $entries = MealPlanEntry::query()
             ->where('meal_plan_id', $this->mealPlanId)
-            ->whereBetween('planned_on', [$start->toDateString(), $start->copy()->addDays(6)->toDateString()])
+            ->whereBetween('planned_on', [$start->toDateString(), $start->copy()->addDays($horizon - 1)->toDateString()])
             ->with(['recipe', 'foodItem'])
             ->orderBy('sort_order')
             ->get();
@@ -209,9 +222,16 @@ class MealPlanner extends Component
 
         $weeklyDeficit = 0;
         $target = $user->profile?->daily_calorie_target ?? 2000;
+        $goalType = $user->profile?->goal_type?->value ?? GoalType::WeightLoss->value;
         foreach ($daySummaries as $summary) {
             $weeklyDeficit += $target - (int) ($summary['totals']['energy_kcal'] ?? 0);
         }
+
+        $projection = app(\App\Services\Body\BodyMetricCalculator::class)
+            ->weeklyWeightProjection($weeklyDeficit, $goalType);
+
+        $kcalChartLabels = $days->map(fn ($d) => $d->format('D d/m'))->values();
+        $kcalChartData = $days->map(fn ($d) => (int) ($daySummaries[$d->toDateString()]['totals']['energy_kcal'] ?? 0))->values();
 
         $activeProgram = $this->programId ? Program::with('members.user')->find($this->programId) : null;
         $programMembers = $activeProgram
@@ -240,7 +260,11 @@ class MealPlanner extends Component
             'friends' => app(\App\Services\Social\FriendshipService::class)->friendsOf($user),
             'activeProgram' => $activeProgram,
             'programMembers' => $programMembers,
-            'weeklyProjectionKg' => app(\App\Services\Body\BodyMetricCalculator::class)->weightLossProjectionKg(max(0, $weeklyDeficit)),
+            'projection' => $projection,
+            'horizonDays' => $horizon,
+            'kcalChartLabels' => $kcalChartLabels,
+            'kcalChartData' => $kcalChartData,
+            'calorieTargetLine' => array_fill(0, $horizon, $target),
             'contextParams' => $contextParams,
         ]);
     }

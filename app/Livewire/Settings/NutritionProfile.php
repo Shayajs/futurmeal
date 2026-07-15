@@ -6,6 +6,7 @@ use App\Enums\ActivityLevel;
 use App\Enums\GoalType;
 use App\Models\UserProfile;
 use App\Services\Body\BodyMetricCalculator;
+use App\Services\Nutrition\MealPlannerService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -140,6 +141,8 @@ class NutritionProfile extends Component
             'target_weight_kg' => $this->target_weight_kg,
             'target_body_fat_percent' => $this->target_body_fat_percent,
         ]);
+
+        app(MealPlannerService::class)->ensureDefaultPlan($user->fresh());
 
         session()->flash('status', 'Paramètres nutrition mis à jour. Objectif : '.$target.' kcal/jour.');
     }

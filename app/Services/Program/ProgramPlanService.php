@@ -144,4 +144,17 @@ class ProgramPlanService
                 ];
             });
     }
+
+    public function memberAdherenceRates(Program $program, int $days = 7): Collection
+    {
+        return $program->members()
+            ->with('user')
+            ->get()
+            ->map(fn (ProgramMember $member) => [
+                'user_id' => $member->user_id,
+                'name' => $member->user->name,
+                'role' => $member->role->value,
+                'adherence' => $this->adherenceRate($member->user, $program, $days),
+            ]);
+    }
 }

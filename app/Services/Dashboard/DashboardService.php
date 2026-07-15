@@ -92,7 +92,7 @@ class DashboardService
                     'body_fat' => $metrics30->pluck('body_fat_percent')->values()->all(),
                 ],
             ],
-            'projection' => $this->weightProjection($weeklyDeficit),
+            'projection' => $this->weightProjection($weeklyDeficit, $profile?->goal_type?->value ?? 'weight_loss'),
             'programs' => $this->programContext($user),
         ];
     }
@@ -175,13 +175,15 @@ class DashboardService
         return $this->weeklyDeficitFromWeekly($weekly, $target);
     }
 
-    private function weightProjection(float $weeklyDeficitKcal): array
+    private function weightProjection(float $weeklyDeficitKcal, string $goalType): array
     {
-        $kg = $this->bodyCalculator->weightLossProjectionKg(max(0, $weeklyDeficitKcal));
+        $projection = $this->bodyCalculator->weeklyWeightProjection($weeklyDeficitKcal, $goalType);
 
         return [
-            'weekly_deficit_kcal' => (int) $weeklyDeficitKcal,
-            'estimated_kg' => $kg,
+            'weekly_deficit_kcal' => $projection['weekly_kcal_delta'],
+            'estimated_kg' => $projection['kg'],
+            'type' => $projection['type'],
+            'label' => $projection['label'],
         ];
     }
 

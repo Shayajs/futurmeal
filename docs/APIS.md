@@ -39,11 +39,14 @@ GET /api/v2/search?categories_tags=en:beverages&page_size=20
 - Pas de clé API requise
 - User-Agent recommandé : `FuturMeal/1.0 (contact@example.com)`
 
-### Stratégie FuturMeal
+### Stratégie FuturMeal (MVP)
 
-1. Recherche locale d'abord (`food_items` cache)
-2. Fallback API live avec rate limiting
-3. Stocker barcode, nom, nutriments normalisés par 100g
+1. Recherche locale d'abord (CIQUAL + `food_items` cache)
+2. **Scan barcode live** via API v3 (`OpenFoodFactsClient::fetchByBarcode`)
+3. **Recherche texte live** via API v2 (`OpenFoodFactsClient::searchByText`) si résultats locaux insuffisants
+4. Cache résultats recherche (`off_search_*`, TTL configurable)
+5. Rate limiting : 30 req/min/IP (`config/futurmeal.php`)
+6. Stocker barcode, nom, nutriments normalisés par 100g
 
 ---
 

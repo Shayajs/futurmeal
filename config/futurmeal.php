@@ -1,7 +1,11 @@
 <?php
 
 return [
+    'production_domain' => env('FUTURMEAL_PRODUCTION_DOMAIN', 'futurmeal.fr'),
+
     'off_user_agent' => env('OFF_USER_AGENT', 'FuturMeal/1.0 (dev@futurmeal.test)'),
+    'off_search_cache_ttl' => (int) env('OFF_SEARCH_CACHE_TTL', 3600),
+    'off_search_rate_limit' => (int) env('OFF_SEARCH_RATE_LIMIT', 30),
 
     'open_prices_base_url' => env('OPEN_PRICES_BASE_URL', 'https://prices.openfoodfacts.org'),
     'open_prices_cache_ttl' => (int) env('OPEN_PRICES_CACHE_TTL', 86400),

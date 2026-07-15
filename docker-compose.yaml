@@ -1,5 +1,14 @@
 # FuturMeal — production
 #
+# Réseau Allotata : nginx est joint au réseau Docker externe www_laravel_net
+# (Nginx Proxy Manager Allotata, conteneur npm_proxy). Pas de ports 80/443 exposés
+# ici — le routage TLS se fait dans NPM (interface :81).
+#
+# Prérequis sur le serveur :
+#   docker network inspect www_laravel_net   # doit exister (stack Allotata)
+#
+# Dans NPM : Proxy Host → Forward Hostname futurmeal_nginx (ou futurmeal), port 80.
+#
 # Démarrage :
 #   cp docker/prod/env.prod.example .env
 #   docker compose -f docker-compose.yaml build app
@@ -41,7 +50,7 @@ services:
       - app
     networks:
       - futurmeal-internal
-      - laravel_net
+      - allotata_npm
 
   queue:
     image: futurmeal-app-prod:${FUTURMEAL_IMAGE_TAG:-latest}
@@ -105,7 +114,8 @@ services:
 networks:
   futurmeal-internal:
     driver: bridge
-  laravel_net:
+  # Réseau prod Allotata — partagé avec npm_proxy (Nginx Proxy Manager)
+  allotata_npm:
     external: true
     name: www_laravel_net
 

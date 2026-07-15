@@ -40,4 +40,18 @@ class BodyMetricCalculatorTest extends TestCase
         $kg = $this->calculator->weightLossProjectionKg(7700);
         $this->assertEquals(1.0, $kg);
     }
+
+    public function test_weekly_projection_weight_loss(): void
+    {
+        $result = $this->calculator->weeklyWeightProjection(7700, 'weight_loss');
+        $this->assertEquals(1.0, $result['kg']);
+        $this->assertSame('loss', $result['type']);
+    }
+
+    public function test_weekly_projection_muscle_gain(): void
+    {
+        $result = $this->calculator->weeklyWeightProjection(-7700, 'muscle_gain');
+        $this->assertEquals(1.0, $result['kg']);
+        $this->assertSame('gain', $result['type']);
+    }
 }

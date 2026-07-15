@@ -35,11 +35,26 @@ Accès : **http://futurmeal.test**
 
 ## Production
 
+FuturMeal tourne sur le **réseau Docker Allotata** `www_laravel_net` (NPM). Seul le conteneur `futurmeal_nginx` y est connecté ; app, queue, scheduler et MariaDB restent sur le réseau interne.
+
 ```bash
 cp docker/prod/env.prod.example .env
+# Renseigner APP_URL, DB_PASSWORD, APP_KEY, etc.
+
 docker compose -f docker-compose.yaml build app
 docker compose -f docker-compose.yaml up -d
 ```
+
+### Nginx Proxy Manager (Allotata)
+
+1. Vérifier que le réseau existe : `docker network inspect www_laravel_net`
+2. Dans NPM (port 81) → **Proxy Hosts** → Add :
+   - **Domain** : `futurmeal.fr` (ou ton FQDN)
+   - **Forward Hostname** : `futurmeal_nginx`
+   - **Forward Port** : `80`
+   - SSL : Let's Encrypt via NPM
+
+Les conteneurs `app`, `queue`, `scheduler` et `db` ne sont **pas** sur le réseau NPM (isolation).
 
 ## Documentation
 

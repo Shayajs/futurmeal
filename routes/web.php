@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FriendInviteController;
+use App\Http\Controllers\ProgramInviteController;
 use App\Http\Controllers\RecipeController;
 use App\Livewire\BudgetManager;
 use App\Livewire\ChartsExplorer;
@@ -32,6 +33,7 @@ Route::middleware(['auth', 'verified', 'onboarded'])->group(function () {
     Route::get('planner', MealPlanner::class)->name('planner');
     Route::get('planner/day/{date}', DayEditor::class)->name('planner.day');
     Route::get('programs', ProgramManager::class)->name('programs');
+    Route::get('programs/join/{token}', ProgramInviteController::class)->name('programs.join');
     Route::get('recipes', [RecipeController::class, 'index'])->name('recipes.index');
     Route::get('recipes/create', RecipeEditor::class)->name('recipes.create');
     Route::get('recipes/{recipe}', [RecipeController::class, 'show'])->name('recipes.show');

@@ -75,15 +75,25 @@ class MealPlannerService
         $start = now()->startOfDay();
         $end = $start->copy()->addDays($horizon - 1);
 
-        return MealPlan::firstOrCreate(
+        $plan = MealPlan::firstOrCreate(
             [
                 'user_id' => $user->id,
-                'name' => 'Plan '.$start->format('d/m/Y'),
+                'program_id' => null,
             ],
             [
+                'name' => 'Plan '.$start->format('d/m/Y'),
                 'starts_on' => $start,
                 'ends_on' => $end,
             ]
         );
+
+        if ($plan->ends_on?->toDateString() !== $end->toDateString()) {
+            $plan->update([
+                'ends_on' => $end,
+                'starts_on' => $start,
+            ]);
+        }
+
+        return $plan;
     }
 }

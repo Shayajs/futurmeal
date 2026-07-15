@@ -7,7 +7,12 @@
         <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div>
                 <h1 class="text-h3 font-medium">
-                    Semaine du {{ \Carbon\Carbon::parse($weekStart)->format('d/m/Y') }}
+                    @if ($activeProgram)
+                        Semaine du {{ \Carbon\Carbon::parse($weekStart)->format('d/m/Y') }}
+                    @else
+                        Plan du {{ \Carbon\Carbon::parse($weekStart)->format('d/m/Y') }}
+                        <span class="text-fm-muted font-normal text-base">· {{ $horizonDays }} jours</span>
+                    @endif
                 </h1>
                 @if ($planContext->isFriend())
                     <p class="text-sm text-fm-muted mt-1">
@@ -31,8 +36,8 @@
                     @endforeach
                 </select>
                 <div class="flex gap-2 w-full sm:w-auto">
-                    <button wire:click="previousWeek" type="button" class="fm-btn-sm flex-1 sm:flex-none">← Semaine</button>
-                    <button wire:click="nextWeek" type="button" class="fm-btn-sm flex-1 sm:flex-none">Semaine →</button>
+                    <button wire:click="previousWeek" type="button" class="fm-btn-sm flex-1 sm:flex-none">← {{ $activeProgram ? 'Semaine' : 'Période' }}</button>
+                    <button wire:click="nextWeek" type="button" class="fm-btn-sm flex-1 sm:flex-none">{{ $activeProgram ? 'Semaine' : 'Période' }} →</button>
                 </div>
             </div>
         </div>
@@ -150,7 +155,11 @@
             </div>
         @endif
 
-        <div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        <div @class([
+            'grid gap-3 overflow-x-auto',
+            'grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7' => $horizonDays <= 7,
+            'grid-flow-col auto-cols-[minmax(9rem,1fr)]' => $horizonDays > 7,
+        ]) style="{{ $horizonDays > 7 ? 'grid-template-columns: repeat('.$horizonDays.', minmax(9rem, 1fr));' : '' }}">
             @foreach ($days as $day)
                 @php
                     $key = $day->toDateString();
@@ -210,9 +219,39 @@
             @endforeach
         </div>
 
+        <div class="mt-6 fm-panel">
+            <h2 class="text-sm font-medium mb-4">Kcal par jour — période</h2>
+            <canvas
+                data-chart="bar"
+                data-mixed="1"
+                data-labels='@json($kcalChartLabels)'
+                data-datasets='@json([
+                    [
+                        "type" => "bar",
+                        "label" => "Kcal planifiées",
+                        "data" => $kcalChartData,
+                        "backgroundColor" => "rgba(0,255,136,0.35)",
+                        "borderColor" => "#00FF88",
+                        "borderWidth" => 1,
+                    ],
+                    [
+                        "type" => "line",
+                        "label" => "Objectif",
+                        "data" => $calorieTargetLine,
+                        "borderColor" => "#8B95A5",
+                        "borderWidth" => 2,
+                        "pointRadius" => 0,
+                        "fill" => false,
+                    ],
+                ])'>
+            </canvas>
+        </div>
+
         <p class="text-xs text-fm-muted mt-6">
             Objectif journalier (tes cibles) : {{ $calorieTarget }} kcal
-            · Estimation perte ~{{ $weeklyProjectionKg }} kg cette semaine (indicatif).
+            @if ($projection['kg'] > 0)
+                · Projection indicative : {{ $projection['label'] }} (7700 kcal ≈ 1 kg).
+            @endif
         </p>
     </div>
 </div>

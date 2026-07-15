@@ -111,4 +111,36 @@ class ProgramPlanServiceTest extends TestCase
         $this->assertEquals($program->id, $plan->program_id);
         $this->assertEquals($owner->id, $plan->user_id);
     }
+
+    public function test_member_adherence_rates_returns_all_members(): void
+    {
+        $owner = User::factory()->create();
+        $member = User::factory()->create();
+
+        $program = Program::create([
+            'owner_id' => $owner->id,
+            'name' => 'Groupe',
+            'week_starts_on' => now()->startOfWeek(),
+        ]);
+
+        ProgramMember::create([
+            'program_id' => $program->id,
+            'user_id' => $owner->id,
+            'role' => ProgramMemberRole::Owner,
+        ]);
+
+        ProgramMember::create([
+            'program_id' => $program->id,
+            'user_id' => $member->id,
+            'role' => ProgramMemberRole::Member,
+        ]);
+
+        $rates = $this->service->memberAdherenceRates($program);
+
+        $this->assertCount(2, $rates);
+        $this->assertEqualsCanonicalizing(
+            [$owner->id, $member->id],
+            $rates->pluck('user_id')->all()
+        );
+    }
 }

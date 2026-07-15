@@ -97,7 +97,11 @@
     </div>
 
     <dl class="fm-panel grid grid-cols-2 md:grid-cols-4 gap-6">
-        <x-fm.stat-card label="Déficit semaine" :value="$data['projection']['weekly_deficit_kcal']" unit="kcal" />
+        <x-fm.stat-card
+            label="{{ ($data['projection']['type'] ?? 'loss') === 'gain' ? 'Surplus semaine' : 'Déficit semaine' }}"
+            :value="$data['projection']['weekly_deficit_kcal']"
+            unit="kcal"
+        />
         <x-fm.stat-card
             label="Δ poids (30j)"
             :value="$data['body']['weight_delta'] !== null ? ($data['body']['weight_delta'] > 0 ? '+' : '').$data['body']['weight_delta'] : '—'"
@@ -120,7 +124,7 @@
 
     @if ($data['projection']['estimated_kg'] > 0)
         <p class="text-caption text-fm-muted">
-            Projection indicative : ~{{ $data['projection']['estimated_kg'] }} kg cette semaine (7700 kcal ≈ 1 kg).
+            Projection indicative : {{ $data['projection']['label'] }} cette semaine (7700 kcal ≈ 1 kg).
         </p>
     @endif
 

@@ -6,6 +6,7 @@ use App\Enums\ProgramMemberRole;
 use App\Models\Program;
 use App\Models\ProgramMember;
 use App\Services\LogSnag\LogSnagClient;
+use App\Services\Program\ProgramInvitationService;
 use App\Services\Program\ProgramPlanService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -83,6 +84,15 @@ class ProgramManager extends Component
         $program->update(['lock_portions' => ! $program->lock_portions]);
     }
 
+    public function generateInviteLink(int $programId, ProgramInvitationService $invitations): void
+    {
+        $program = Program::findOrFail($programId);
+        abort_unless($program->owner_id === Auth::id(), 403);
+
+        $invitation = $invitations->createLink($program);
+        session()->flash('program-invite-link', $invitations->joinUrl($invitation));
+    }
+
     public function render(ProgramPlanService $programPlan)
     {
         $user = Auth::user();
@@ -90,12 +100,16 @@ class ProgramManager extends Component
 
         $enriched = $memberships->map(function ($membership) use ($user, $programPlan) {
             $program = $membership->program;
+            $isOwner = $membership->role->value === 'owner';
 
             return [
                 'membership' => $membership,
                 'program' => $program,
                 'adherence' => $programPlan->adherenceRate($user, $program),
                 'shared_metrics' => $programPlan->sharedMemberMetrics($program),
+                'member_adherence' => $isOwner ? $programPlan->memberAdherenceRates($program) : collect(),
+                'member_count' => $program->members->count(),
+                'max_members' => config('futurmeal.max_program_members'),
             ];
         });
 

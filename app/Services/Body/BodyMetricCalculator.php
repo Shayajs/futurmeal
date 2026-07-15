@@ -89,6 +89,40 @@ class BodyMetricCalculator
         return round($calorieDeficitTotal / 7700, 2);
     }
 
+    /**
+     * @return array{kg: float, weekly_kcal_delta: int, type: string, label: string}
+     */
+    public function weeklyWeightProjection(float $weeklyKcalDelta, string $goalType): array
+    {
+        $isGainGoal = $goalType === 'muscle_gain';
+
+        if ($isGainGoal) {
+            $surplus = max(0, -$weeklyKcalDelta);
+            $kg = $this->weightLossProjectionKg($surplus);
+
+            return [
+                'kg' => $kg,
+                'weekly_kcal_delta' => (int) round(-$weeklyKcalDelta),
+                'type' => 'gain',
+                'label' => $kg > 0
+                    ? "prise estimée ~{$kg} kg"
+                    : 'pas de surplus significatif',
+            ];
+        }
+
+        $deficit = max(0, $weeklyKcalDelta);
+        $kg = $this->weightLossProjectionKg($deficit);
+
+        return [
+            'kg' => $kg,
+            'weekly_kcal_delta' => (int) round($weeklyKcalDelta),
+            'type' => 'loss',
+            'label' => $kg > 0
+                ? "perte estimée ~{$kg} kg"
+                : 'pas de déficit significatif',
+        ];
+    }
+
     public function resolveBodyFat(
         BodyMetricSource $source,
         Gender $gender,

@@ -48,6 +48,17 @@ class FoodSearchService
 
         $results = $this->resolver->searchFoods($query, $user ?? Auth::user(), $limit);
 
+        if (count($results) < $limit && ! $this->looksLikeBarcode($query)) {
+            $offResults = $this->offClient->searchByText($query, $limit - count($results));
+            $existingIds = collect($results)->pluck('id')->all();
+            foreach ($offResults as $offResult) {
+                if (! in_array($offResult['id'], $existingIds, true)) {
+                    $results[] = $offResult;
+                }
+            }
+            $results = array_slice($results, 0, $limit);
+        }
+
         return [
             'results' => $results,
             'can_create_custom' => $results === [],

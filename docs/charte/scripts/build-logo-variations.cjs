@@ -50,7 +50,7 @@ function buildWordmark(font, textColor = '#FFFFFF') {
     const vbW = advance + lAdvance + pad * 2;
     const vbH = ascender - font.descender * scale + pad * 2;
 
-    const seed = seedDef(grainCx + pad, grainCy + pad, grainRx, grainRy, 'wm');
+    const seed = seedDef(grainCx, grainCy, grainRx, grainRy, 'wm');
 
     return {
         vbW, vbH, pad, textColor, pathData, stemX, stemTop, stemW, stemH, seed,
@@ -157,7 +157,7 @@ function stackedSvg(font) {
     const stemH = fullH - grainRy * 2 - gap;
     const grainCx = stemX + stemW / 2;
     const grainCy = stemBottom - grainRy;
-    const seed = seedDef(grainCx + 24, grainCy + 24, grainRx, grainRy, 'stack');
+    const seed = seedDef(grainCx, grainCy, grainRx, grainRy, 'stack');
     const vbW = Math.max(c1, c2 + lGlyph.advanceWidth * scale) + 48;
     const vbH = ascender - font.descender * scale + FONT_SIZE + 48;
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r(vbW)} ${r(vbH)}" role="img" aria-label="FuturMeal">

@@ -19,8 +19,12 @@ class AiWeekPlanResolverTest extends TestCase
 
     private function createCiqualFood(string $name = 'Riz cuit'): CiqualFood
     {
-        $food = CiqualFood::create(['alim_code' => 100, 'name_fr' => $name]);
-        $kcal = CiqualNutrient::create(['code' => 'ENERGY_KCAL', 'name_fr' => 'Energie', 'unit' => 'kcal']);
+        static $code = 100;
+        $food = CiqualFood::create(['alim_code' => $code++, 'name_fr' => $name]);
+        $kcal = CiqualNutrient::firstOrCreate(
+            ['code' => 'ENERGY_KCAL'],
+            ['name_fr' => 'Energie', 'unit' => 'kcal'],
+        );
         CiqualComposition::create([
             'ciqual_food_id' => $food->id,
             'ciqual_nutrient_id' => $kcal->id,
@@ -80,6 +84,90 @@ class AiWeekPlanResolverTest extends TestCase
         $this->assertSame('food', $draft->items[1]->matchKind);
         $this->assertSame(FoodReferenceType::Ciqual->value, $draft->items[1]->referenceType);
         $this->assertSame(180.0, $draft->items[1]->quantityG);
+    }
+
+    public function test_matches_common_ai_labels_via_tokens(): void
+    {
+        Http::fake(['*' => Http::response(['products' => []], 200)]);
+
+        $user = User::factory()->create();
+        $this->createCiqualFood('Poulet, blanc, sans peau, cuit');
+        $this->createCiqualFood('Huile d\'olive');
+        $this->createCiqualFood('Skyr nature');
+
+        $parsed = [
+            'days' => [[
+                'date' => '2026-07-20',
+                'slots' => [
+                    'breakfast' => [[
+                        'label' => 'Skyr',
+                        'quantity_g' => 300.0,
+                        'recipe_id' => null,
+                        'recipe_hint' => null,
+                    ]],
+                    'lunch' => [[
+                        'label' => 'Blanc de poulet',
+                        'quantity_g' => 200.0,
+                        'recipe_id' => null,
+                        'recipe_hint' => null,
+                    ]],
+                    'dinner' => [[
+                        'label' => 'Huile d\'olive',
+                        'quantity_g' => 10.0,
+                        'recipe_id' => null,
+                        'recipe_hint' => null,
+                    ]],
+                    'morning_snack' => [],
+                    'afternoon_snack' => [],
+                    'night_snack' => [],
+                ],
+            ]],
+        ];
+
+        $draft = app(AiWeekPlanResolver::class)->resolve($user, $parsed);
+
+        $this->assertSame(3, $draft->resolvedCount());
+        $this->assertSame(0, $draft->unresolvedCount());
+    }
+
+    public function test_rejects_weak_off_false_positives(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'products' => [[
+                    'code' => '123',
+                    'product_name' => 'Fromage Blanc Nature',
+                    'brands' => 'X',
+                    'nutriments' => [],
+                ]],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+
+        $parsed = [
+            'days' => [[
+                'date' => '2026-07-20',
+                'slots' => [
+                    'breakfast' => [[
+                        'label' => 'Pomme',
+                        'quantity_g' => 150.0,
+                        'recipe_id' => null,
+                        'recipe_hint' => null,
+                    ]],
+                    'lunch' => [],
+                    'dinner' => [],
+                    'morning_snack' => [],
+                    'afternoon_snack' => [],
+                    'night_snack' => [],
+                ],
+            ]],
+        ];
+
+        $draft = app(AiWeekPlanResolver::class)->resolve($user, $parsed);
+
+        $this->assertSame(0, $draft->resolvedCount());
+        $this->assertSame(1, $draft->unresolvedCount());
     }
 
     public function test_marks_unresolved_when_no_match(): void

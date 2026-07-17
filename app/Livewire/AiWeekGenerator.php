@@ -2,7 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Data\AiMealPreferences;
 use App\Data\AiWeekPlanDraft;
+use App\Enums\MealComplexity;
+use App\Enums\WheyPreference;
 use App\Services\Ai\AiPromptBuilder;
 use App\Services\Ai\AiWeekPlanApplier;
 use App\Services\Ai\AiWeekPlanParser;
@@ -43,7 +46,21 @@ class AiWeekGenerator extends Component
 
     public string $rangeEnd = '';
 
+    public string $aiWhey = 'none';
+
+    public string $aiMealComplexity = 'simple_budget';
+
+    public string $forbiddenFoodsText = '';
+
+    public string $preferredFoodsText = '';
+
+    public int $tastyDays = 1;
+
+    public bool $includeDesserts = false;
+
     public string $userInstructions = '';
+
+    public bool $savePreferences = true;
 
     public string $promptFull = '';
 
@@ -68,6 +85,7 @@ class AiWeekGenerator extends Component
 
         $this->resetFlow();
         $this->initRangeFromPlanner();
+        $this->loadPreferencesFromProfile();
         $this->rebuildPrompt($builder);
         $this->show = true;
         $this->step = 'consignes';
@@ -83,6 +101,10 @@ class AiWeekGenerator extends Component
     {
         if (! $this->validateRange()) {
             return;
+        }
+
+        if ($this->savePreferences) {
+            $this->persistPreferences();
         }
 
         $this->rebuildPrompt($builder);
@@ -225,13 +247,71 @@ class AiWeekGenerator extends Component
     {
         $built = $builder->build(
             Auth::user(),
-            $this->rangeStart,
-            $this->selectedHorizonDays(),
-            $this->userInstructions,
+            $this->rangeStart !== '' ? $this->rangeStart : ($this->weekStart ?: now()->toDateString()),
+            $this->rangeStart !== '' && $this->rangeEnd !== ''
+                ? $this->selectedHorizonDays()
+                : max(1, $this->horizonDays),
+            $this->currentPreferences(),
         );
         $this->promptFull = $built['full'];
         $this->promptSystem = $built['system'];
         $this->promptUser = $built['user'];
+    }
+
+    private function currentPreferences(): AiMealPreferences
+    {
+        return new AiMealPreferences(
+            whey: WheyPreference::tryFrom($this->aiWhey) ?? WheyPreference::None,
+            mealComplexity: MealComplexity::tryFrom($this->aiMealComplexity) ?? MealComplexity::SimpleBudget,
+            forbiddenFoods: $this->parseFoodList($this->forbiddenFoodsText),
+            preferredFoods: $this->parseFoodList($this->preferredFoodsText),
+            tastyDays: max(0, $this->tastyDays),
+            includeDesserts: $this->includeDesserts,
+            freeInstructions: $this->userInstructions,
+        );
+    }
+
+    private function loadPreferencesFromProfile(): void
+    {
+        $prefs = AiMealPreferences::fromProfile(Auth::user()?->profile);
+        $this->aiWhey = $prefs->whey->value;
+        $this->aiMealComplexity = $prefs->mealComplexity->value;
+        $this->forbiddenFoodsText = implode(', ', $prefs->forbiddenFoods);
+        $this->preferredFoodsText = implode(', ', $prefs->preferredFoods);
+        $this->tastyDays = $prefs->tastyDays;
+        $this->includeDesserts = $prefs->includeDesserts;
+        $this->savePreferences = true;
+    }
+
+    private function persistPreferences(): void
+    {
+        $profile = Auth::user()?->profile;
+        if (! $profile) {
+            return;
+        }
+
+        $prefs = $this->currentPreferences();
+        $profile->update([
+            'ai_whey' => $prefs->whey->value,
+            'ai_meal_complexity' => $prefs->mealComplexity->value,
+            'ai_forbidden_foods' => $prefs->forbiddenFoods,
+            'ai_preferred_foods' => $prefs->preferredFoods,
+            'ai_tasty_days_per_week' => min(7, max(0, $prefs->tastyDays)),
+            'ai_include_desserts' => $prefs->includeDesserts,
+        ]);
+    }
+
+    /** @return list<string> */
+    private function parseFoodList(string $text): array
+    {
+        $parts = preg_split('/[\n,;]+/u', $text) ?: [];
+
+        return collect($parts)
+            ->map(fn ($p) => trim($p))
+            ->filter(fn ($p) => $p !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /** @return list<string> */
@@ -270,6 +350,9 @@ class AiWeekGenerator extends Component
             $this->validate([
                 'rangeStart' => ['required', 'date'],
                 'rangeEnd' => ['required', 'date', 'after_or_equal:rangeStart'],
+                'aiWhey' => ['required', 'in:none,concentrate,isolate'],
+                'aiMealComplexity' => ['required', 'in:simple_budget,simple_tight,fast_tasty,complex,gourmet'],
+                'tastyDays' => ['required', 'integer', 'min:0', 'max:31'],
             ], [
                 'rangeStart.required' => 'Choisis une date de début.',
                 'rangeEnd.required' => 'Choisis une date de fin.',
@@ -288,6 +371,10 @@ class AiWeekGenerator extends Component
             return false;
         }
 
+        if ($this->tastyDays > $days) {
+            $this->tastyDays = $days;
+        }
+
         return true;
     }
 
@@ -304,6 +391,13 @@ class AiWeekGenerator extends Component
         $this->generating = false;
         $this->rangeStart = '';
         $this->rangeEnd = '';
+        $this->aiWhey = 'none';
+        $this->aiMealComplexity = 'simple_budget';
+        $this->forbiddenFoodsText = '';
+        $this->preferredFoodsText = '';
+        $this->tastyDays = 1;
+        $this->includeDesserts = false;
+        $this->savePreferences = true;
     }
 
     public function render()
@@ -320,6 +414,8 @@ class AiWeekGenerator extends Component
             'slots' => \App\Support\MealSlots::ordered(),
             'selectedDays' => $selectedDays,
             'maxRangeDays' => self::MAX_RANGE_DAYS,
+            'wheyOptions' => WheyPreference::cases(),
+            'complexityOptions' => MealComplexity::cases(),
         ]);
     }
 }

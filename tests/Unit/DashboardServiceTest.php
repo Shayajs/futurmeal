@@ -97,7 +97,10 @@ class DashboardServiceTest extends TestCase
         $data = $this->service->build($user);
 
         $this->assertArrayHasKey('weekly_budget', $data);
+        $this->assertArrayHasKey('budget_overview', $data);
         $this->assertFalse($data['weekly_budget']['has_prices']);
+        $this->assertArrayHasKey('month', $data['budget_overview']);
+        $this->assertArrayHasKey('year', $data['budget_overview']);
     }
 
     public function test_program_context_empty_when_no_memberships(): void

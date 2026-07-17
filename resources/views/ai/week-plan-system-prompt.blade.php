@@ -11,6 +11,15 @@ Règles :
 - Préfère les recettes du catalogue utilisateur quand c'est pertinent : renseigne "recipe_id" (id exact) et/ou "recipe_hint" (nom proche).
 - Sinon propose des aliments courants avec "label" clair (français) et "quantity_g" réaliste.
 - Les collations peuvent être des tableaux vides si non nécessaires.
+- Respecte strictement les aliments interdits.
+- Mets en avant les aliments favoris (apparition plus fréquente, sans monotonie).
+- Applique la contrainte whey et le style de plats indiqués.
+- Sur exactement {{ $tastyDays }} jour(s) de la période, propose des repas plus gras / plus goûteux (plaisir) tout en restant proche de la cible kcal globale de la période.
+@if ($includeDesserts)
+- Inclure des desserts : oui. Ajoute un item dessert (yaourt, fruit, fromage blanc, pâtisserie légère, etc.) dans les créneaux lunch et/ou dinner la plupart des jours, sans dépasser la cible kcal journalière.
+@else
+- Inclure des desserts : non. Ne propose pas de dessert.
+@endif
 - Pas de markdown hors fence JSON optionnel. Pas de commentaires dans le JSON.
 
 Schéma attendu :

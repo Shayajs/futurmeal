@@ -2,7 +2,10 @@
 
 namespace Tests\Unit;
 
+use App\Data\AiMealPreferences;
 use App\Enums\GoalType;
+use App\Enums\MealComplexity;
+use App\Enums\WheyPreference;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\UserProfile;
@@ -34,7 +37,15 @@ class AiPromptBuilderTest extends TestCase
             $user,
             '2026-07-20',
             2,
-            'Pas de lactose',
+            new AiMealPreferences(
+                whey: WheyPreference::Isolate,
+                mealComplexity: MealComplexity::FastTasty,
+                forbiddenFoods: ['porc', 'lactose'],
+                preferredFoods: ['poulet'],
+                tastyDays: 1,
+                includeDesserts: true,
+                freeInstructions: 'Pas de lactose',
+            ),
         );
 
         $this->assertStringContainsString('2800', $built['system']);
@@ -42,6 +53,11 @@ class AiPromptBuilderTest extends TestCase
         $this->assertStringContainsString('2026-07-21', $built['user']);
         $this->assertStringContainsString('Poulet riz', $built['user']);
         $this->assertStringContainsString('Pas de lactose', $built['user']);
+        $this->assertStringContainsString('porc', $built['user']);
+        $this->assertStringContainsString('Whey isolat', $built['user']);
+        $this->assertStringContainsString('Rapide mais goûtu', $built['user']);
+        $this->assertStringContainsString('dessert', mb_strtolower($built['user']));
+        $this->assertStringContainsString('Inclure des desserts : oui', $built['system']);
         $this->assertStringContainsString('breakfast', $built['user']);
         $this->assertSame($built['full'], trim($built['system'])."\n\n---\n\n".trim($built['user']));
     }

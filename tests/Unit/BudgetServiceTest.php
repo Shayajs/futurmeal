@@ -109,6 +109,69 @@ class BudgetServiceTest extends TestCase
         $this->assertEquals(1, $weekly['entry_count']);
     }
 
+    public function test_range_total_and_projections(): void
+    {
+        $user = User::factory()->create();
+        UserProfile::create([
+            'user_id' => $user->id,
+            'gender' => Gender::Male,
+            'birth_date' => '1990-01-01',
+            'height_cm' => 180,
+            'activity_level' => ActivityLevel::Moderate,
+            'goal_type' => GoalType::WeightLoss,
+            'planning_horizon_days' => 7,
+            'daily_calorie_target' => 2000,
+            'calorie_adjustment' => -400,
+            'weekly_budget_target' => 70,
+        ]);
+
+        $weekStart = now()->startOfWeek();
+        $plan = MealPlan::create([
+            'user_id' => $user->id,
+            'name' => 'Test',
+            'starts_on' => $weekStart,
+            'ends_on' => $weekStart->copy()->addDays(6),
+        ]);
+
+        MealPlanEntry::create([
+            'meal_plan_id' => $plan->id,
+            'planned_on' => $weekStart,
+            'meal_slot' => 'lunch',
+            'label' => 'Repas A',
+            'quantity_g' => 200,
+            'estimated_cost' => 10.0,
+        ]);
+        MealPlanEntry::create([
+            'meal_plan_id' => $plan->id,
+            'planned_on' => $weekStart->copy()->addDays(1),
+            'meal_slot' => 'dinner',
+            'label' => 'Repas B',
+            'quantity_g' => 200,
+            'estimated_cost' => 25.0,
+        ]);
+
+        BudgetEntry::create([
+            'user_id' => $user->id,
+            'label' => 'Test',
+            'reference_type' => FoodReferenceType::Custom,
+            'price_per_kg' => 5,
+        ]);
+
+        $range = $this->service->rangeTotal($user, $weekStart, $weekStart->copy()->addDays(6));
+        $this->assertEquals(35.0, $range['spent']);
+        $this->assertEquals(2, $range['priced_count']);
+
+        $proj = $this->service->projections($user, $weekStart);
+        $daysInMonth = $weekStart->daysInMonth;
+        $this->assertEquals(35.0, $proj['week']);
+        $this->assertEquals(round(35 / 7, 2), $proj['day']);
+        $this->assertEquals(round(35 * ($daysInMonth / 7), 2), $proj['month']);
+        $this->assertEquals(round(35 * 52, 2), $proj['year']);
+        $this->assertEquals(70.0, $proj['target_week']);
+        $this->assertEquals(-35.0, $proj['week_vs_target']);
+        $this->assertEquals(50, $proj['week_pct_of_target']);
+    }
+
     public function test_resolve_price_prefers_user_price_over_open_prices(): void
     {
         $user = User::factory()->create();

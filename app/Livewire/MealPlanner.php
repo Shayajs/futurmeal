@@ -283,16 +283,18 @@ class MealPlanner extends Component
         ProgramPlanService $programPlan,
         PlanShareService $planShares,
         PlanViewContextService $planContext,
+        \App\Services\Budget\BudgetService $budget,
     ) {
         $user = Auth::user();
         $context = $planContext->resolve($user, $this->viewUserId, $this->programId);
         $start = Carbon::parse($this->weekStart);
         $horizon = $this->programId ? 7 : ($user->profile?->planning_horizon_days ?? 7);
         $days = collect(range(0, $horizon - 1))->map(fn ($i) => $start->copy()->addDays($i));
+        $rangeEnd = $start->copy()->addDays($horizon - 1);
 
         $entries = MealPlanEntry::query()
             ->where('meal_plan_id', $this->mealPlanId)
-            ->whereBetween('planned_on', [$start->toDateString(), $start->copy()->addDays($horizon - 1)->toDateString()])
+            ->whereBetween('planned_on', [$start->toDateString(), $rangeEnd->toDateString()])
             ->with(['recipe', 'foodItem'])
             ->orderBy('sort_order')
             ->get();
@@ -326,6 +328,15 @@ class MealPlanner extends Component
                 'entry_count' => $dayEntries->count(),
             ]];
         });
+
+        $pricedCount = $entries->filter(fn ($e) => $e->estimated_cost !== null)->count();
+        $weekCost = [
+            'spent' => round($entries->sum(fn ($e) => (float) ($e->estimated_cost ?? 0)), 2),
+            'entry_count' => $entries->count(),
+            'priced_count' => $pricedCount,
+            'has_prices' => $budget->hasAnyPrices($context->planOwner),
+            'fully_priced' => $entries->count() > 0 && $pricedCount === $entries->count(),
+        ];
 
         $weeklyDeficit = 0;
         $target = $user->profile?->daily_calorie_target ?? 2000;
@@ -377,6 +388,7 @@ class MealPlanner extends Component
         return view('livewire.meal-planner', [
             'days' => $days,
             'daySummaries' => $daySummaries,
+            'weekCost' => $weekCost,
             'slots' => MealSlots::ordered(),
             'calorieTarget' => $target,
             'planningHorizon' => $user->profile?->planning_horizon_days ?? 7,

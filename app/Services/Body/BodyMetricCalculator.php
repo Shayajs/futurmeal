@@ -84,6 +84,43 @@ class BodyMetricCalculator
         return (int) round(($bmr * $activityMultiplier) + $calorieAdjustment);
     }
 
+    /** Maintenance = (MB × activité) + kcal sport estimées / jour. */
+    public function maintenanceTdee(
+        Gender $gender,
+        float $weightKg,
+        float $heightCm,
+        int $ageYears,
+        float $activityMultiplier,
+        int $sportKcalPerDay = 0,
+    ): int {
+        $bmr = $this->bmr($gender, $weightKg, $heightCm, $ageYears);
+
+        return (int) round(($bmr * $activityMultiplier) + max(0, $sportKcalPerDay));
+    }
+
+    /**
+     * Plancher d'apport quotidien indicatif (jamais sous le MB).
+     * Homme ≥ 1500, femme/autre ≥ 1200.
+     */
+    public function floorDailyKcal(Gender $gender, ?int $bmr = null): int
+    {
+        $genderFloor = match ($gender) {
+            Gender::Male => 1500,
+            Gender::Female, Gender::Other => 1200,
+        };
+
+        if ($bmr !== null && $bmr > 0) {
+            return max($genderFloor, $bmr);
+        }
+
+        return $genderFloor;
+    }
+
+    public function clampDailyTarget(int $target, Gender $gender, ?int $bmr = null): int
+    {
+        return max($this->floorDailyKcal($gender, $bmr), min(6000, $target));
+    }
+
     public function weightLossProjectionKg(float $calorieDeficitTotal): float
     {
         return round($calorieDeficitTotal / 7700, 2);

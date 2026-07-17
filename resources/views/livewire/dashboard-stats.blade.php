@@ -82,18 +82,75 @@
             <div class="mt-4 pt-4 border-t border-fm-border">
                 @if ($data['weekly_budget']['has_prices'])
                     <p class="text-sm break-words">
-                        Budget estimé :
+                        Semaine :
                         <strong class="tabular-nums">{{ number_format($data['weekly_budget']['spent'], 2, ',', ' ') }} €</strong>
-                        <span class="text-fm-muted">({{ $data['weekly_budget']['priced_count'] }}/{{ $data['weekly_budget']['entry_count'] }} repas estimés)</span>
+                        <span class="text-fm-muted">({{ $data['weekly_budget']['priced_count'] }}/{{ $data['weekly_budget']['entry_count'] }})</span>
                     </p>
                 @else
                     <p class="text-sm text-fm-muted">
                         <a href="{{ route('settings.budget') }}" wire:navigate class="text-fm-primary hover:underline">Renseigner mes prix →</a>
-                        pour voir le budget semaine.
+                        pour voir le budget.
                     </p>
                 @endif
             </div>
         </div>
+    </div>
+
+    <div class="fm-panel space-y-4">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 class="text-sm font-medium">Budget estimé</h2>
+            <a href="{{ route('settings.budget') }}" wire:navigate class="text-sm text-fm-primary hover:underline">Gérer les prix →</a>
+        </div>
+        @if ($data['budget_overview']['has_prices'])
+            <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <dt class="text-caption text-fm-muted">Par jour</dt>
+                    <dd class="mt-1 text-xl font-medium tabular-nums">{{ number_format($data['budget_overview']['day'], 2, ',', ' ') }} €</dd>
+                </div>
+                <div>
+                    <dt class="text-caption text-fm-muted">Semaine</dt>
+                    <dd class="mt-1 text-xl font-medium tabular-nums">{{ number_format($data['budget_overview']['week'], 2, ',', ' ') }} €</dd>
+                </div>
+                <div>
+                    <dt class="text-caption text-fm-muted">Mois (proj.)</dt>
+                    <dd class="mt-1 text-xl font-medium tabular-nums">{{ number_format($data['budget_overview']['month'], 2, ',', ' ') }} €</dd>
+                </div>
+                <div>
+                    <dt class="text-caption text-fm-muted">Année (proj.)</dt>
+                    <dd class="mt-1 text-xl font-medium tabular-nums">{{ number_format($data['budget_overview']['year'], 2, ',', ' ') }} €</dd>
+                </div>
+            </dl>
+            <p class="text-caption text-fm-muted">
+                {{ $data['budget_overview']['priced_count'] }}/{{ $data['budget_overview']['entry_count'] }} repas estimés cette semaine.
+                Mois/année = projection au rythme actuel.
+            </p>
+            @if ($data['budget_overview']['target_week'] !== null)
+                <div class="pt-3 border-t border-fm-border space-y-2">
+                    <p class="text-sm">
+                        Cible semaine :
+                        <strong class="tabular-nums">{{ number_format($data['budget_overview']['target_week'], 2, ',', ' ') }} €</strong>
+                        @if ($data['budget_overview']['week_vs_target'] !== null)
+                            ·
+                            <span class="{{ $data['budget_overview']['week_vs_target'] > 0 ? 'text-fm-accent' : 'text-fm-primary' }}">
+                                {{ $data['budget_overview']['week_vs_target'] > 0 ? '+' : '' }}{{ number_format($data['budget_overview']['week_vs_target'], 2, ',', ' ') }} €
+                            </span>
+                            @if ($data['budget_overview']['week_pct_of_target'] !== null)
+                                <span class="text-fm-muted">({{ $data['budget_overview']['week_pct_of_target'] }} %)</span>
+                            @endif
+                        @endif
+                    </p>
+                    <p class="text-caption text-fm-muted">
+                        Cible mois ≈ {{ number_format($data['budget_overview']['target_month'], 2, ',', ' ') }} €
+                        · année ≈ {{ number_format($data['budget_overview']['target_year'], 2, ',', ' ') }} €
+                    </p>
+                </div>
+            @endif
+        @else
+            <p class="text-sm text-fm-muted">
+                Aucun prix enregistré.
+                <a href="{{ route('settings.budget') }}" wire:navigate class="text-fm-primary hover:underline">Configurer mon budget →</a>
+            </p>
+        @endif
     </div>
 
     <dl class="fm-panel grid grid-cols-2 md:grid-cols-4 gap-6">

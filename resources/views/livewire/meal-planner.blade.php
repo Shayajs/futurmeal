@@ -24,6 +24,21 @@
                 @else
                     <p class="text-sm text-fm-muted mt-1">Mon plan · horizon {{ $planningHorizon }} jours</p>
                 @endif
+                @if ($weekCost['entry_count'] > 0 || $weekCost['has_prices'])
+                    <p class="text-sm mt-2">
+                        @if ($weekCost['priced_count'] > 0)
+                            Coût période :
+                            <strong class="tabular-nums">≈ {{ number_format($weekCost['spent'], 2, ',', ' ') }} €</strong>
+                            <span class="text-fm-muted">({{ $weekCost['priced_count'] }}/{{ $weekCost['entry_count'] }} repas estimés)</span>
+                        @elseif ($weekCost['has_prices'])
+                            <span class="text-fm-muted">Aucun coût estimé sur cette période —</span>
+                            <a href="{{ route('settings.budget') }}" wire:navigate class="text-fm-primary hover:underline">vérifier les prix</a>
+                        @else
+                            <a href="{{ route('settings.budget') }}" wire:navigate class="text-fm-primary hover:underline">Renseigner mes prix</a>
+                            <span class="text-fm-muted">pour voir le coût de la période.</span>
+                        @endif
+                    </p>
+                @endif
             </div>
             <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full sm:w-auto">
                 <select wire:model.live="planContextKey" class="fm-input text-sm w-full sm:min-w-[12rem] sm:w-auto">
@@ -257,9 +272,21 @@
             </div>
         @endif
 
+        @php
+            $slotAbbreviations = [
+                'morning_snack' => 'Coll. mat.',
+                'breakfast' => 'Matin',
+                'lunch' => 'Midi',
+                'afternoon_snack' => 'Goûter',
+                'dinner' => 'Soir',
+                'night_snack' => 'Coll. nuit',
+            ];
+        @endphp
+
+        {{-- Mobile / tablette : cards --}}
         <div @class([
-            'grid gap-3 overflow-x-auto',
-            'grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7' => $horizonDays <= 7,
+            'grid gap-3 overflow-x-auto lg:hidden',
+            'grid-cols-1 xs:grid-cols-2 md:grid-cols-3' => $horizonDays <= 7,
             'grid-flow-col auto-cols-[minmax(9rem,1fr)]' => $horizonDays > 7,
         ]) style="{{ $horizonDays > 7 ? 'grid-template-columns: repeat('.$horizonDays.', minmax(9rem, 1fr));' : '' }}">
             @foreach ($days as $day)
@@ -319,6 +346,100 @@
                     </a>
                 </div>
             @endforeach
+        </div>
+
+        {{-- Desktop lg+ : lignes jour × colonnes créneaux --}}
+        <div class="hidden lg:block overflow-x-auto -mx-1">
+            <table class="w-full min-w-[64rem] border-collapse text-sm">
+                <thead>
+                    <tr class="border-b border-fm-border text-left text-caption text-fm-muted">
+                        <th class="sticky left-0 z-10 bg-fm-surface py-2.5 pr-3 font-medium w-28">Jour</th>
+                        @foreach ($slots as $slotKey => $slotLabel)
+                            <th class="px-2 py-2.5 font-medium whitespace-nowrap" title="{{ $slotLabel }}">
+                                {{ $slotAbbreviations[$slotKey] ?? $slotLabel }}
+                            </th>
+                        @endforeach
+                        <th class="px-2 py-2.5 font-medium whitespace-nowrap">Macros</th>
+                        <th class="px-2 py-2.5 font-medium whitespace-nowrap">€</th>
+                        <th class="pl-2 py-2.5 font-medium w-28"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($days as $day)
+                        @php
+                            $key = $day->toDateString();
+                            $summary = $daySummaries[$key];
+                            $isToday = $day->isToday();
+                            $kcal = (int) ($summary['totals']['energy_kcal'] ?? 0);
+                            $protein = round($summary['totals']['protein_g'] ?? 0);
+                            $carbs = round($summary['totals']['carbs_g'] ?? 0);
+                            $fat = round($summary['totals']['fat_g'] ?? 0);
+                        @endphp
+                        <tr @class([
+                            'border-b border-fm-border/70 align-top hover:bg-fm-bg/60',
+                            'bg-fm-primary/5' => $isToday,
+                        ])>
+                            <td @class([
+                                'sticky left-0 z-10 py-3 pr-3',
+                                'bg-fm-primary/5' => $isToday,
+                                'bg-fm-surface' => ! $isToday,
+                            ])>
+                                <p class="font-medium whitespace-nowrap">
+                                    {{ $day->translatedFormat('D d/m') }}
+                                    @if ($isToday)
+                                        <span class="text-fm-primary text-xs font-normal">· auj.</span>
+                                    @endif
+                                </p>
+                            </td>
+                            @foreach ($slots as $slotKey => $slotLabel)
+                                @php
+                                    $items = $summary['by_slot'][$slotKey] ?? [];
+                                    $cellText = $items !== [] ? implode(', ', $items) : null;
+                                @endphp
+                                <td class="px-2 py-3 max-w-[9rem]">
+                                    @if ($cellText)
+                                        <p class="text-xs leading-snug line-clamp-3" title="{{ $cellText }}">{{ $cellText }}</p>
+                                    @else
+                                        <span class="text-fm-muted/50">—</span>
+                                    @endif
+                                </td>
+                            @endforeach
+                            <td class="px-2 py-3 whitespace-nowrap">
+                                <span @class([
+                                    'block tabular-nums font-medium',
+                                    'text-fm-accent' => $kcal > $calorieTarget,
+                                    'text-fm-primary' => $kcal <= $calorieTarget,
+                                ])>{{ $kcal }} kcal</span>
+                                <span class="text-xs text-fm-muted tabular-nums">
+                                    <span class="text-fm-protein">P{{ $protein }}</span>
+                                    · <span class="text-fm-carbs">G{{ $carbs }}</span>
+                                    · <span class="text-fm-fat">L{{ $fat }}</span>
+                                </span>
+                            </td>
+                            <td class="px-2 py-3 whitespace-nowrap text-xs text-fm-muted tabular-nums">
+                                @if ($summary['cost'] !== null)
+                                    {{ number_format($summary['cost'], 2, ',', ' ') }} €
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="pl-2 py-3 text-right">
+                                <a
+                                    href="{{ route('planner.day', array_filter(['date' => $key, 'program' => $programId, 'view' => $viewUserId])) }}"
+                                    wire:navigate
+                                    @class([
+                                        'inline-flex items-center justify-center text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-touch whitespace-nowrap',
+                                        'border-fm-primary text-fm-primary hover:bg-fm-primary/10' => $canEdit,
+                                        'border-fm-border text-fm-muted' => ! $canEdit,
+                                    ])
+                                >
+                                    {{ $canEdit ? ($summary['entry_count'] > 0 ? 'Modifier' : 'Remplir') : 'Voir' }}
+                                </a>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
 
         <div class="mt-6 fm-panel">

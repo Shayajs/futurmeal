@@ -2,6 +2,7 @@
 
 namespace App\Services\Ai;
 
+use App\Data\AiMealPreferences;
 use App\Models\User;
 use App\Support\MealSlots;
 use Carbon\Carbon;
@@ -16,11 +17,17 @@ class AiPromptBuilder
         User $user,
         string $weekStart,
         int $horizonDays,
-        string $userInstructions = '',
+        ?AiMealPreferences $preferences = null,
     ): array {
         $profile = $user->profile;
         $calorieTarget = $profile?->daily_calorie_target ?? 2000;
         $goalLabel = $profile?->goal_type?->label() ?? 'Perte de poids';
+        $preferences ??= AiMealPreferences::fromProfile($profile);
+
+        $tastyDays = min(
+            max(0, $preferences->tastyDays),
+            max(1, $horizonDays),
+        );
 
         $start = Carbon::parse($weekStart)->startOfDay();
         $dates = collect(range(0, $horizonDays - 1))
@@ -35,6 +42,8 @@ class AiPromptBuilder
         $system = view('ai.week-plan-system-prompt', [
             'calorieTarget' => $calorieTarget,
             'goalLabel' => $goalLabel,
+            'tastyDays' => $tastyDays,
+            'includeDesserts' => $preferences->includeDesserts,
         ])->render();
 
         $userPrompt = $this->buildUserPrompt(
@@ -43,7 +52,8 @@ class AiPromptBuilder
             $recipes,
             $calorieTarget,
             $goalLabel,
-            $userInstructions,
+            $preferences,
+            $tastyDays,
         );
 
         $full = trim($system)."\n\n---\n\n".trim($userPrompt);
@@ -66,7 +76,8 @@ class AiPromptBuilder
         Collection $recipes,
         int $calorieTarget,
         string $goalLabel,
-        string $userInstructions,
+        AiMealPreferences $preferences,
+        int $tastyDays,
     ): string {
         $slotLines = collect($slots)
             ->map(fn (string $label, string $key) => "- {$key} : {$label}")
@@ -82,9 +93,25 @@ class AiPromptBuilder
                 return "- id={$r->id} « {$r->name} »{$tag}";
             })->implode("\n");
 
-        $instructions = trim($userInstructions) !== ''
-            ? trim($userInstructions)
+        $forbidden = $preferences->forbiddenFoods === []
+            ? '(aucun)'
+            : collect($preferences->forbiddenFoods)->map(fn ($f) => "- {$f}")->implode("\n");
+
+        $preferred = $preferences->preferredFoods === []
+            ? '(aucun)'
+            : collect($preferences->preferredFoods)->map(fn ($f) => "- {$f}")->implode("\n");
+
+        $instructions = trim($preferences->freeInstructions) !== ''
+            ? trim($preferences->freeInstructions)
             : '(aucune consigne supplémentaire)';
+
+        $wheyLine = $preferences->whey->promptLine();
+        $complexityLine = $preferences->mealComplexity->promptLine();
+        $complexityLabel = $preferences->mealComplexity->label();
+        $wheyLabel = $preferences->whey->label();
+        $dessertsLine = $preferences->includeDesserts
+            ? 'Oui — ajoute un dessert (ou fruit dessert) après lunch et/ou dinner la plupart des jours, en restant dans la cible kcal'
+            : 'Non — ne propose pas de dessert';
 
         return <<<PROMPT
 Période à planifier (dates obligatoires) :
@@ -94,6 +121,18 @@ Créneaux autorisés :
 {$slotLines}
 
 Objectif nutritionnel : {$calorieTarget} kcal/jour — {$goalLabel}.
+
+Préférences repas :
+- Whey : {$wheyLabel} — {$wheyLine}
+- Style de plats : {$complexityLabel} — {$complexityLine}
+- Jours plus gras / plus goûteux : {$tastyDays} jour(s) sur la période (répartis, pas tous d'affilée si possible)
+- Desserts : {$dessertsLine}
+
+Aliments interdits (ne jamais proposer) :
+{$forbidden}
+
+Aliments à mettre en avant (apparition plus fréquente) :
+{$preferred}
 
 Catalogue de recettes de l'utilisateur (préfère recipe_id quand pertinent) :
 {$recipeLines}

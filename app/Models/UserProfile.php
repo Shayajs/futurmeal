@@ -4,7 +4,10 @@ namespace App\Models;
 
 use App\Enums\ActivityLevel;
 use App\Enums\Gender;
+use App\Enums\GoalIntensity;
 use App\Enums\GoalType;
+use App\Enums\MealComplexity;
+use App\Enums\WheyPreference;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,11 +23,20 @@ class UserProfile extends Model
         'planning_horizon_days',
         'daily_calorie_target',
         'calorie_adjustment',
+        'sport_kcal_per_day',
+        'goal_intensity',
+        'ai_whey',
+        'ai_meal_complexity',
+        'ai_forbidden_foods',
+        'ai_preferred_foods',
+        'ai_tasty_days_per_week',
+        'ai_include_desserts',
         'target_weight_kg',
         'target_body_fat_percent',
         'plan_view_user_id',
         'open_prices_location_id',
         'open_prices_location_label',
+        'weekly_budget_target',
     ];
 
     protected function casts(): array
@@ -38,8 +50,17 @@ class UserProfile extends Model
             'planning_horizon_days' => 'integer',
             'daily_calorie_target' => 'integer',
             'calorie_adjustment' => 'integer',
+            'sport_kcal_per_day' => 'integer',
+            'goal_intensity' => GoalIntensity::class,
+            'ai_whey' => WheyPreference::class,
+            'ai_meal_complexity' => MealComplexity::class,
+            'ai_forbidden_foods' => 'array',
+            'ai_preferred_foods' => 'array',
+            'ai_tasty_days_per_week' => 'integer',
+            'ai_include_desserts' => 'boolean',
             'target_weight_kg' => 'float',
             'target_body_fat_percent' => 'float',
+            'weekly_budget_target' => 'float',
         ];
     }
 

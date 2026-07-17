@@ -23,7 +23,25 @@
             <dt class="text-caption text-fm-muted">Repas estimés</dt>
             <dd class="mt-1 text-xl font-medium tabular-nums">{{ $weekly['priced_count'] }}/{{ $weekly['entry_count'] }}</dd>
         </div>
+        @if ($weekly['has_prices'])
+            <div>
+                <dt class="text-caption text-fm-muted">Projection mois</dt>
+                <dd class="mt-1 text-lg font-medium tabular-nums">{{ number_format($projections['month'], 2, ',', ' ') }} €</dd>
+            </div>
+            <div>
+                <dt class="text-caption text-fm-muted">Projection année</dt>
+                <dd class="mt-1 text-lg font-medium tabular-nums">{{ number_format($projections['year'], 2, ',', ' ') }} €</dd>
+            </div>
+        @endif
     </dl>
+
+    <form wire:submit="saveTarget" class="fm-panel space-y-4">
+        <h2 class="text-sm font-medium">Budget cible (optionnel)</h2>
+        <p class="text-caption text-fm-muted">Enveloppe hebdomadaire pour comparer tes dépenses estimées sur le Dashboard.</p>
+        <x-fm.number step="0.5" min="0" wire:model="weekly_budget_target" placeholder="Ex: 80 € / semaine" />
+        @error('weekly_budget_target') <p class="text-xs text-red-400">{{ $message }}</p> @enderror
+        <button type="submit" class="fm-btn">Enregistrer la cible</button>
+    </form>
 
     <div class="fm-panel space-y-4">
         <h2 class="text-sm font-medium">Magasin Open Prices</h2>

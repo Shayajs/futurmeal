@@ -41,7 +41,7 @@
                     @endif
 
                     @if ($step === 'consignes')
-                        <div class="space-y-3">
+                        <div class="space-y-4">
                             <div class="grid sm:grid-cols-2 gap-3">
                                 <label class="block text-sm">
                                     <span class="text-caption text-fm-muted">Du</span>
@@ -53,14 +53,59 @@
                                 </label>
                             </div>
                             <p class="text-xs text-fm-muted">
-                                {{ $selectedDays }} jour(s) seront générés
-                                (max {{ $maxRangeDays }}). Prérempli avec la période affichée dans le planner.
+                                {{ $selectedDays }} jour(s) seront générés (max {{ $maxRangeDays }}).
                             </p>
 
+                            <div class="grid sm:grid-cols-2 gap-3">
+                                <label class="block text-sm">
+                                    <span class="text-caption text-fm-muted">Whey</span>
+                                    <select wire:model="aiWhey" class="fm-input mt-1 w-full">
+                                        @foreach ($wheyOptions as $option)
+                                            <option value="{{ $option->value }}">{{ $option->label() }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label class="block text-sm">
+                                    <span class="text-caption text-fm-muted">Style de plats</span>
+                                    <select wire:model="aiMealComplexity" class="fm-input mt-1 w-full">
+                                        @foreach ($complexityOptions as $option)
+                                            <option value="{{ $option->value }}">{{ $option->label() }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            </div>
+
                             <label class="block text-sm">
-                                <span class="text-caption text-fm-muted">Ce que tu veux (allergies, budget, batch cooking…)</span>
-                                <textarea wire:model="userInstructions" rows="5" class="fm-input mt-1 w-full" placeholder="Ex. : pas de porc, repas simples à emporter le midi, max 40 € la semaine…"></textarea>
+                                <span class="text-caption text-fm-muted">Jours plus gras / plus goûteux</span>
+                                <input type="number" min="0" max="{{ $selectedDays }}" wire:model="tastyDays" class="fm-input mt-1 w-full sm:w-32">
+                                <span class="text-xs text-fm-muted">Sur {{ $selectedDays }} jour(s) — pour éviter une semaine fade.</span>
                             </label>
+
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" wire:model="includeDesserts">
+                                Inclure des desserts (après déjeuner / dîner, dans la cible kcal)
+                            </label>
+
+                            <label class="block text-sm">
+                                <span class="text-caption text-fm-muted">Aliments interdits</span>
+                                <textarea wire:model="forbiddenFoodsText" rows="2" class="fm-input mt-1 w-full" placeholder="porc, arachides, gluten…"></textarea>
+                            </label>
+
+                            <label class="block text-sm">
+                                <span class="text-caption text-fm-muted">Aliments à mettre en avant</span>
+                                <textarea wire:model="preferredFoodsText" rows="2" class="fm-input mt-1 w-full" placeholder="poulet, riz basmati, skyr…"></textarea>
+                            </label>
+
+                            <label class="block text-sm">
+                                <span class="text-caption text-fm-muted">Consignes libres</span>
+                                <textarea wire:model="userInstructions" rows="3" class="fm-input mt-1 w-full" placeholder="Batch cooking, repas à emporter…"></textarea>
+                            </label>
+
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" wire:model="savePreferences">
+                                Enregistrer comme préférences (pour la prochaine fois)
+                            </label>
+
                             <div class="flex justify-end gap-2">
                                 <button type="button" wire:click="goToPrompt" class="fm-btn">Continuer →</button>
                             </div>

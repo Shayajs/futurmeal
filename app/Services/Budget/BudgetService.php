@@ -318,10 +318,13 @@ class BudgetService
         $entry->update(['estimated_cost' => $cost]);
     }
 
-    public function weeklyTotal(User $user, ?Carbon $weekStart = null): array
+    /**
+     * @return array{spent: float, entry_count: int, priced_count: int, has_prices: bool, fully_priced: bool}
+     */
+    public function rangeTotal(User $user, Carbon $from, Carbon $to): array
     {
-        $start = ($weekStart ?? now())->copy()->startOfWeek();
-        $end = $start->copy()->addDays(6);
+        $start = $from->copy()->startOfDay();
+        $end = $to->copy()->startOfDay();
 
         $entries = MealPlanEntry::query()
             ->whereHas('mealPlan', fn ($q) => $q->where('user_id', $user->id))
@@ -338,6 +341,66 @@ class BudgetService
             'priced_count' => $pricedEntries,
             'has_prices' => $this->hasAnyPrices($user),
             'fully_priced' => $totalEntries > 0 && $pricedEntries === $totalEntries,
+        ];
+    }
+
+    /**
+     * @return array{spent: float, entry_count: int, priced_count: int, has_prices: bool, fully_priced: bool}
+     */
+    public function weeklyTotal(User $user, ?Carbon $weekStart = null): array
+    {
+        $start = ($weekStart ?? now())->copy()->startOfWeek();
+        $end = $start->copy()->addDays(6);
+
+        return $this->rangeTotal($user, $start, $end);
+    }
+
+    /**
+     * Projections mois/année à partir du coût réel de la semaine.
+     *
+     * @return array{
+     *     day: float,
+     *     week: float,
+     *     month: float,
+     *     year: float,
+     *     entry_count: int,
+     *     priced_count: int,
+     *     has_prices: bool,
+     *     fully_priced: bool,
+     *     target_week: ?float,
+     *     target_month: ?float,
+     *     target_year: ?float,
+     *     week_vs_target: ?float,
+     *     week_pct_of_target: ?int
+     * }
+     */
+    public function projections(User $user, ?Carbon $weekStart = null): array
+    {
+        $start = ($weekStart ?? now())->copy()->startOfWeek();
+        $week = $this->weeklyTotal($user, $start);
+        $spent = $week['spent'];
+        $daysInMonth = $start->daysInMonth;
+        $monthFactor = $daysInMonth / 7;
+
+        $targetWeek = $user->profile?->weekly_budget_target;
+        $targetWeek = $targetWeek !== null ? (float) $targetWeek : null;
+
+        return [
+            'day' => round($spent / 7, 2),
+            'week' => $spent,
+            'month' => round($spent * $monthFactor, 2),
+            'year' => round($spent * 52, 2),
+            'entry_count' => $week['entry_count'],
+            'priced_count' => $week['priced_count'],
+            'has_prices' => $week['has_prices'],
+            'fully_priced' => $week['fully_priced'],
+            'target_week' => $targetWeek,
+            'target_month' => $targetWeek !== null ? round($targetWeek * $monthFactor, 2) : null,
+            'target_year' => $targetWeek !== null ? round($targetWeek * 52, 2) : null,
+            'week_vs_target' => $targetWeek !== null ? round($spent - $targetWeek, 2) : null,
+            'week_pct_of_target' => $targetWeek !== null && $targetWeek > 0
+                ? (int) round(($spent / $targetWeek) * 100)
+                : null,
         ];
     }
 }

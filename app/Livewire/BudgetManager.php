@@ -16,11 +16,36 @@ class BudgetManager extends Component
 
     public ?float $price_per_kg = null;
 
+    public ?float $weekly_budget_target = null;
+
     public string $storeSearch = '';
 
     public string $storeCity = '';
 
     public array $storeResults = [];
+
+    public function mount(): void
+    {
+        $this->weekly_budget_target = Auth::user()?->profile?->weekly_budget_target;
+    }
+
+    public function saveTarget(): void
+    {
+        $this->validate([
+            'weekly_budget_target' => 'nullable|numeric|min:0|max:99999',
+        ]);
+
+        $profile = Auth::user()?->profile;
+        if (! $profile) {
+            return;
+        }
+
+        $profile->update([
+            'weekly_budget_target' => $this->weekly_budget_target,
+        ]);
+
+        session()->flash('status', 'Budget cible enregistré.');
+    }
 
     public function save(BudgetService $budget): void
     {
@@ -109,10 +134,12 @@ class BudgetManager extends Component
     public function render(BudgetService $budget, CommunityPriceService $community)
     {
         $profile = Auth::user()->profile;
+        $projections = $budget->projections(Auth::user());
 
         return view('livewire.budget-manager', [
             'entries' => $budget->entriesFor(Auth::user()),
             'weekly' => $budget->weeklyTotal(Auth::user()),
+            'projections' => $projections,
             'contributions' => $community->contributionsFor(Auth::user()),
             'selectedStoreId' => $profile?->open_prices_location_id,
             'selectedStoreLabel' => $profile?->open_prices_location_label,

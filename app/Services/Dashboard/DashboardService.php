@@ -41,6 +41,7 @@ class DashboardService
 
         $weekly = $this->planner->weeklyNutrientsForPlanOwner($mealOwner);
         $weeklyBudget = $this->budget->weeklyTotal($user);
+        $budgetOverview = $this->budget->projections($user);
 
         $deficit = $target - $consumed;
         $weeklyDeficit = $this->weeklyDeficitFromWeekly($weekly, $target);
@@ -71,6 +72,7 @@ class DashboardService
                 'target' => $target,
             ],
             'weekly_budget' => $weeklyBudget,
+            'budget_overview' => $budgetOverview,
             'body' => [
                 'latest_weight' => $latestMetric?->weight_kg,
                 'latest_body_fat' => $latestMetric?->body_fat_percent,

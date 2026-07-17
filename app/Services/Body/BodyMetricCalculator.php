@@ -7,6 +7,9 @@ use App\Enums\Gender;
 
 class BodyMetricCalculator
 {
+    /** Marge de sécurité appliquée au MB (évite de surestimer la dépense en perte). */
+    public const BMR_SAFETY_FACTOR = 0.9;
+
     public function bmi(float $weightKg, float $heightCm): float
     {
         $heightM = $heightCm / 100;
@@ -71,6 +74,21 @@ class BodyMetricCalculator
         return (int) round($bmr);
     }
 
+    /** MB Mifflin-St Jeor avec marge de sécurité (−10 %). */
+    public function applyBmrSafety(int $bmr): int
+    {
+        return (int) round($bmr * self::BMR_SAFETY_FACTOR);
+    }
+
+    public function bmrWithSafety(
+        Gender $gender,
+        float $weightKg,
+        float $heightCm,
+        int $ageYears,
+    ): int {
+        return $this->applyBmrSafety($this->bmr($gender, $weightKg, $heightCm, $ageYears));
+    }
+
     public function tdeeMifflinStJeor(
         Gender $gender,
         float $weightKg,
@@ -79,12 +97,12 @@ class BodyMetricCalculator
         float $activityMultiplier,
         int $calorieAdjustment = 0,
     ): int {
-        $bmr = $this->bmr($gender, $weightKg, $heightCm, $ageYears);
+        $bmr = $this->bmrWithSafety($gender, $weightKg, $heightCm, $ageYears);
 
         return (int) round(($bmr * $activityMultiplier) + $calorieAdjustment);
     }
 
-    /** Maintenance = (MB × activité) + kcal sport estimées / jour. */
+    /** Maintenance = (MB sécurisé × activité) + kcal sport estimées / jour. */
     public function maintenanceTdee(
         Gender $gender,
         float $weightKg,
@@ -93,7 +111,7 @@ class BodyMetricCalculator
         float $activityMultiplier,
         int $sportKcalPerDay = 0,
     ): int {
-        $bmr = $this->bmr($gender, $weightKg, $heightCm, $ageYears);
+        $bmr = $this->bmrWithSafety($gender, $weightKg, $heightCm, $ageYears);
 
         return (int) round(($bmr * $activityMultiplier) + max(0, $sportKcalPerDay));
     }

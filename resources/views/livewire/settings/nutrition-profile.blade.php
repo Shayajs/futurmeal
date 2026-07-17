@@ -57,7 +57,12 @@
                     <div class="flex flex-col gap-1 px-4 py-2.5 sm:flex-row sm:items-baseline sm:justify-between">
                         <dt>
                             Métabolisme de base (MB)
-                            <span class="block text-caption text-fm-muted">Mifflin-St Jeor — kcal au repos</span>
+                            <span class="block text-caption text-fm-muted">
+                                Mifflin-St Jeor −10&nbsp;% de sécurité
+                                @if ($basal_metabolic_rate_raw)
+                                    (brut {{ $basal_metabolic_rate_raw }} → {{ $basal_metabolic_rate }})
+                                @endif
+                            </span>
                         </dt>
                         <dd class="tabular-nums font-medium shrink-0">{{ $basal_metabolic_rate }} kcal</dd>
                     </div>

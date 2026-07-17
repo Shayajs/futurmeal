@@ -40,6 +40,8 @@ class NutritionProfile extends Component
 
     public ?int $basal_metabolic_rate = null;
 
+    public ?int $basal_metabolic_rate_raw = null;
+
     public ?int $floor_daily_kcal = null;
 
     public function mount(): void
@@ -98,12 +100,14 @@ class NutritionProfile extends Component
         $calculator = app(BodyMetricCalculator::class);
         $activity = ActivityLevel::from($this->activity_level);
 
-        $this->basal_metabolic_rate = $calculator->bmr(
+        $this->basal_metabolic_rate_raw = $calculator->bmr(
             $profile->gender,
             (float) $latest->weight_kg,
             (float) $profile->height_cm,
             $age,
         );
+
+        $this->basal_metabolic_rate = $calculator->applyBmrSafety($this->basal_metabolic_rate_raw);
 
         $this->maintenance_tdee = $calculator->maintenanceTdee(
             $profile->gender,

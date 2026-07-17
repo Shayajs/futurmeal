@@ -42,6 +42,19 @@ class GoalIntensityAndFloorTest extends TestCase
         $this->assertSame($base + 300, $withSport);
     }
 
+    public function test_bmr_safety_margin_is_ten_percent(): void
+    {
+        $calc = app(BodyMetricCalculator::class);
+        $raw = $calc->bmr(Gender::Male, 80, 180, 30);
+        $safe = $calc->bmrWithSafety(Gender::Male, 80, 180, 30);
+
+        $this->assertSame((int) round($raw * 0.9), $safe);
+        $this->assertSame(
+            (int) round($safe * 1.55),
+            $calc->maintenanceTdee(Gender::Male, 80, 180, 30, 1.55, 0),
+        );
+    }
+
     public function test_clamp_helper_raises_below_floor_when_used(): void
     {
         $calc = app(BodyMetricCalculator::class);

@@ -31,17 +31,28 @@ class AiWeekPlanApplier
         int $horizonDays,
         AiWeekPlanDraft $draft,
     ): array {
-        $start = Carbon::parse($weekStart)->toDateString();
-        $end = Carbon::parse($weekStart)->addDays($horizonDays - 1)->toDateString();
+        $rangeStart = Carbon::parse($weekStart)->startOfDay();
+        $rangeDates = collect(range(0, max(1, $horizonDays) - 1))
+            ->map(fn (int $i) => $rangeStart->copy()->addDays($i)->toDateString());
+
+        $draftDates = collect($draft->items)
+            ->map(fn (AiWeekPlanItemDraft $item) => $item->date)
+            ->filter()
+            ->unique();
+
+        // Plage demandée + jours additionnels renvoyés par l'IA
+        $clearDates = $rangeDates->merge($draftDates)->unique()->values()->all();
 
         $created = 0;
         $skipped = 0;
 
-        DB::transaction(function () use ($user, $mealPlanId, $start, $end, $draft, &$created, &$skipped) {
-            MealPlanEntry::query()
-                ->where('meal_plan_id', $mealPlanId)
-                ->whereBetween('planned_on', [$start, $end])
-                ->delete();
+        DB::transaction(function () use ($user, $mealPlanId, $clearDates, $draft, &$created, &$skipped) {
+            $delete = MealPlanEntry::query()->where('meal_plan_id', $mealPlanId);
+            $delete->where(function ($query) use ($clearDates) {
+                foreach ($clearDates as $date) {
+                    $query->orWhereDate('planned_on', $date);
+                }
+            })->delete();
 
             $sort = 0;
             foreach ($draft->items as $item) {

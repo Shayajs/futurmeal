@@ -35,7 +35,6 @@ class AiWeekPlanParser
             throw new InvalidArgumentException('Le JSON doit contenir une clé "days" (tableau).');
         }
 
-        $expectedSet = array_fill_keys($expectedDates, true);
         $normalizedDays = [];
 
         foreach ($decoded['days'] as $index => $day) {
@@ -44,9 +43,6 @@ class AiWeekPlanParser
             }
 
             $date = $this->normalizeDate($day['date'] ?? null, $index);
-            if ($expectedSet !== [] && ! isset($expectedSet[$date])) {
-                throw new InvalidArgumentException("Date inattendue dans la réponse : {$date}.");
-            }
 
             $slotsRaw = $day['slots'] ?? [];
             if (! is_array($slotsRaw)) {
@@ -72,6 +68,8 @@ class AiWeekPlanParser
             ];
         }
 
+        // Les dates hors plage demandée sont autorisées (l'IA peut en ajouter).
+        // On exige seulement que la plage demandée soit couverte.
         if ($expectedDates !== []) {
             $got = array_column($normalizedDays, 'date');
             $missing = array_diff($expectedDates, $got);

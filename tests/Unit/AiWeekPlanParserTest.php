@@ -59,9 +59,35 @@ MD;
         $this->assertSame('Yaourt', $parsed['days'][0]['slots']['breakfast'][0]['label']);
     }
 
+    public function test_allows_extra_dates_beyond_expected_range(): void
+    {
+        $emptySlots = [
+            'breakfast' => [],
+            'lunch' => [['label' => 'Riz', 'quantity_g' => 100]],
+            'dinner' => [],
+            'morning_snack' => [],
+            'afternoon_snack' => [],
+            'night_snack' => [],
+        ];
+
+        $raw = json_encode([
+            'days' => [
+                ['date' => '2026-07-13', 'slots' => $emptySlots],
+                ['date' => '2026-07-14', 'slots' => $emptySlots],
+                ['date' => '2026-07-20', 'slots' => $emptySlots],
+            ],
+        ]);
+
+        $parsed = app(AiWeekPlanParser::class)->parse($raw, ['2026-07-13', '2026-07-14']);
+
+        $this->assertCount(3, $parsed['days']);
+        $this->assertSame('2026-07-20', $parsed['days'][2]['date']);
+    }
+
     public function test_rejects_missing_dates(): void
     {
         $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Dates manquantes');
 
         app(AiWeekPlanParser::class)->parse(
             '{"days":[{"date":"2026-07-20","slots":{"breakfast":[],"lunch":[],"dinner":[],"morning_snack":[],"afternoon_snack":[],"night_snack":[]}}]}',

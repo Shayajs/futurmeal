@@ -4,7 +4,8 @@ Objectif : produire un plan alimentaire pour la période indiquée, compatible a
 
 Règles :
 - Réponds UNIQUEMENT avec un objet JSON valide (pas de texte avant/après). Tu peux envelopper dans ```json ... ``` si besoin.
-- Respecte exactement les dates listées (une entrée "days" par date).
+- Inclus toutes les dates listées (une entrée "days" par date demandée).
+- Tu peux ajouter des jours supplémentaires hors plage si utile (ex. batch cooking le lendemain).
 - Utilise uniquement les clés de créneaux fournies.
 - Vise environ {{ $calorieTarget }} kcal/jour (objectif : {{ $goalLabel }}).
 - Préfère les recettes du catalogue utilisateur quand c'est pertinent : renseigne "recipe_id" (id exact) et/ou "recipe_hint" (nom proche).

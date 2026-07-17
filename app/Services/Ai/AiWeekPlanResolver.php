@@ -204,10 +204,25 @@ class AiWeekPlanResolver
             'chocolat noir 70%' => 'chocolat noir',
             'beurre de cacahuète' => 'beurre de cacahuète',
             'noix de cajou' => 'cajou',
+            'amandes' => 'amande',
+            'courgettes' => 'courgette',
+            'tomates' => 'tomate',
+            'fraises' => 'fraise',
+            'framboises' => 'framboise',
+            'myrtilles' => 'myrtille',
+            'carottes' => 'carotte',
+            'aubergines' => 'aubergine',
             'tomates cerises' => 'tomate cerise',
             'pain de seigle' => 'pain de seigle',
             'pain complet' => 'pain complet',
             'haricots plats' => 'haricot',
+            'haricots verts' => 'haricot vert',
+            'flocons d\'avoine' => 'flocons d\'avoine',
+            'champignons' => 'champignon',
+            'épinards' => 'épinard',
+            'poireaux' => 'poireau',
+            'oeufs entiers' => 'oeuf',
+            'blancs d\'oeufs' => 'blanc d\'oeuf',
         ];
 
         $norm = $this->normalize($label);
@@ -364,9 +379,31 @@ class AiWeekPlanResolver
                 continue;
             }
             $tokens[] = $part;
+            $singular = $this->frenchSingular($part);
+            if ($singular !== $part) {
+                $tokens[] = $singular;
+            }
         }
 
         return array_values(array_unique($tokens));
+    }
+
+    private function frenchSingular(string $word): string
+    {
+        if (str_ends_with($word, 'aux') && mb_strlen($word) > 3) {
+            return mb_substr($word, 0, -3).'al';
+        }
+        if (str_ends_with($word, 'eaux') && mb_strlen($word) > 4) {
+            return mb_substr($word, 0, -1);
+        }
+        if (str_ends_with($word, 's') && mb_strlen($word) > 3) {
+            return mb_substr($word, 0, -1);
+        }
+        if (str_ends_with($word, 'x') && mb_strlen($word) > 3) {
+            return mb_substr($word, 0, -1);
+        }
+
+        return $word;
     }
 
     /**

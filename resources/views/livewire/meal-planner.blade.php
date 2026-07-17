@@ -349,8 +349,8 @@
         </div>
 
         {{-- Desktop lg+ : lignes jour × colonnes créneaux --}}
-        <div class="hidden lg:block overflow-x-auto -mx-1">
-            <table class="w-full min-w-[64rem] border-collapse text-sm">
+        <div class="hidden lg:flex flex-col overflow-x-auto -mx-1">
+            <table class="w-full min-w-[56rem] border-collapse text-sm">
                 <thead>
                     <tr class="border-b border-fm-border text-left text-caption text-fm-muted">
                         <th class="sticky left-0 z-10 bg-fm-surface py-2.5 pr-3 font-medium w-28">Jour</th>

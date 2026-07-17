@@ -11,6 +11,7 @@ use App\Services\Ai\OpenAiCompatibleClient;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Reactive;
@@ -19,6 +20,8 @@ use Throwable;
 
 class AiWeekGenerator extends Component
 {
+    public const MAX_RANGE_DAYS = 31;
+
     #[Reactive]
     public ?int $mealPlanId = null;
 
@@ -35,6 +38,10 @@ class AiWeekGenerator extends Component
 
     /** consignes | prompt | response | preview */
     public string $step = 'consignes';
+
+    public string $rangeStart = '';
+
+    public string $rangeEnd = '';
 
     public string $userInstructions = '';
 
@@ -60,6 +67,7 @@ class AiWeekGenerator extends Component
         }
 
         $this->resetFlow();
+        $this->initRangeFromPlanner();
         $this->rebuildPrompt($builder);
         $this->show = true;
         $this->step = 'consignes';
@@ -73,6 +81,10 @@ class AiWeekGenerator extends Component
 
     public function goToPrompt(AiPromptBuilder $builder): void
     {
+        if (! $this->validateRange()) {
+            return;
+        }
+
         $this->rebuildPrompt($builder);
         $this->step = 'prompt';
         $this->errorMessage = null;
@@ -97,6 +109,12 @@ class AiWeekGenerator extends Component
         AiWeekPlanResolver $resolver,
     ): void {
         if (! $this->canEdit || ! $this->mealPlanId) {
+            return;
+        }
+
+        if (! $this->validateRange()) {
+            $this->step = 'consignes';
+
             return;
         }
 
@@ -142,6 +160,12 @@ class AiWeekGenerator extends Component
             return;
         }
 
+        if (! $this->validateRange()) {
+            $this->step = 'consignes';
+
+            return;
+        }
+
         $this->errorMessage = null;
 
         try {
@@ -158,6 +182,12 @@ class AiWeekGenerator extends Component
             return;
         }
 
+        if (! $this->validateRange()) {
+            $this->step = 'consignes';
+
+            return;
+        }
+
         $draft = AiWeekPlanDraft::fromArray($this->draftPayload);
         if ($draft->resolvedCount() === 0) {
             $this->errorMessage = 'Aucun item résolu à appliquer.';
@@ -168,8 +198,8 @@ class AiWeekGenerator extends Component
         $result = $applier->apply(
             Auth::user(),
             $this->mealPlanId,
-            $this->weekStart,
-            $this->horizonDays,
+            $this->rangeStart,
+            $this->selectedHorizonDays(),
             $draft,
         );
 
@@ -195,8 +225,8 @@ class AiWeekGenerator extends Component
     {
         $built = $builder->build(
             Auth::user(),
-            $this->weekStart,
-            $this->horizonDays,
+            $this->rangeStart,
+            $this->selectedHorizonDays(),
             $this->userInstructions,
         );
         $this->promptFull = $built['full'];
@@ -207,11 +237,58 @@ class AiWeekGenerator extends Component
     /** @return list<string> */
     private function expectedDates(): array
     {
-        $start = Carbon::parse($this->weekStart)->startOfDay();
+        $start = Carbon::parse($this->rangeStart)->startOfDay();
+        $days = $this->selectedHorizonDays();
 
-        return collect(range(0, $this->horizonDays - 1))
+        return collect(range(0, $days - 1))
             ->map(fn (int $i) => $start->copy()->addDays($i)->toDateString())
             ->all();
+    }
+
+    private function initRangeFromPlanner(): void
+    {
+        $start = $this->weekStart !== ''
+            ? Carbon::parse($this->weekStart)->toDateString()
+            : now()->startOfWeek()->toDateString();
+        $horizon = max(1, $this->horizonDays);
+
+        $this->rangeStart = $start;
+        $this->rangeEnd = Carbon::parse($start)->addDays($horizon - 1)->toDateString();
+    }
+
+    private function selectedHorizonDays(): int
+    {
+        $start = Carbon::parse($this->rangeStart)->startOfDay();
+        $end = Carbon::parse($this->rangeEnd)->startOfDay();
+
+        return max(1, $start->diffInDays($end) + 1);
+    }
+
+    private function validateRange(): bool
+    {
+        try {
+            $this->validate([
+                'rangeStart' => ['required', 'date'],
+                'rangeEnd' => ['required', 'date', 'after_or_equal:rangeStart'],
+            ], [
+                'rangeStart.required' => 'Choisis une date de début.',
+                'rangeEnd.required' => 'Choisis une date de fin.',
+                'rangeEnd.after_or_equal' => 'La date de fin doit être ≥ à la date de début.',
+            ]);
+        } catch (ValidationException $e) {
+            $this->errorMessage = collect($e->validator->errors()->all())->first();
+
+            return false;
+        }
+
+        $days = $this->selectedHorizonDays();
+        if ($days > self::MAX_RANGE_DAYS) {
+            $this->errorMessage = 'Plage limitée à '.self::MAX_RANGE_DAYS.' jours.';
+
+            return false;
+        }
+
+        return true;
     }
 
     private function resetFlow(): void
@@ -225,17 +302,24 @@ class AiWeekGenerator extends Component
         $this->draftPayload = null;
         $this->errorMessage = null;
         $this->generating = false;
+        $this->rangeStart = '';
+        $this->rangeEnd = '';
     }
 
     public function render()
     {
         $draft = $this->draftPayload ? AiWeekPlanDraft::fromArray($this->draftPayload) : null;
         $hasApi = Auth::user()?->hasAiApiConfigured() ?? false;
+        $selectedDays = ($this->rangeStart !== '' && $this->rangeEnd !== '')
+            ? $this->selectedHorizonDays()
+            : $this->horizonDays;
 
         return view('livewire.ai-week-generator', [
             'draft' => $draft,
             'hasApi' => $hasApi,
             'slots' => \App\Support\MealSlots::ordered(),
+            'selectedDays' => $selectedDays,
+            'maxRangeDays' => self::MAX_RANGE_DAYS,
         ]);
     }
 }

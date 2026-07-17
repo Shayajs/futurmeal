@@ -9,8 +9,13 @@
                         <div>
                             <h2 class="text-h3 font-medium">Générer la période avec l'IA</h2>
                             <p class="text-sm text-fm-muted mt-1">
-                                {{ \Carbon\Carbon::parse($weekStart)->format('d/m/Y') }}
-                                · {{ $horizonDays }} jour(s)
+                                @if ($rangeStart && $rangeEnd)
+                                    {{ \Carbon\Carbon::parse($rangeStart)->format('d/m/Y') }}
+                                    → {{ \Carbon\Carbon::parse($rangeEnd)->format('d/m/Y') }}
+                                    · {{ $selectedDays }} jour(s)
+                                @else
+                                    Choisis la plage à générer
+                                @endif
                             </p>
                         </div>
                         <button type="button" wire:click="close" class="fm-btn-sm">Fermer</button>
@@ -37,6 +42,21 @@
 
                     @if ($step === 'consignes')
                         <div class="space-y-3">
+                            <div class="grid sm:grid-cols-2 gap-3">
+                                <label class="block text-sm">
+                                    <span class="text-caption text-fm-muted">Du</span>
+                                    <input type="date" wire:model.live="rangeStart" class="fm-input mt-1 w-full">
+                                </label>
+                                <label class="block text-sm">
+                                    <span class="text-caption text-fm-muted">Au</span>
+                                    <input type="date" wire:model.live="rangeEnd" class="fm-input mt-1 w-full">
+                                </label>
+                            </div>
+                            <p class="text-xs text-fm-muted">
+                                {{ $selectedDays }} jour(s) seront générés
+                                (max {{ $maxRangeDays }}). Prérempli avec la période affichée dans le planner.
+                            </p>
+
                             <label class="block text-sm">
                                 <span class="text-caption text-fm-muted">Ce que tu veux (allergies, budget, batch cooking…)</span>
                                 <textarea wire:model="userInstructions" rows="5" class="fm-input mt-1 w-full" placeholder="Ex. : pas de porc, repas simples à emporter le midi, max 40 € la semaine…"></textarea>

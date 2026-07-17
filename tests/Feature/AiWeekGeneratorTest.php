@@ -118,6 +118,8 @@ class AiWeekGeneratorTest extends TestCase
             ])
             ->call('open')
             ->assertSet('show', true)
+            ->assertSet('rangeStart', $weekStart)
+            ->assertSet('rangeEnd', $day2)
             ->set('rawResponse', $json)
             ->call('parsePastedResponse')
             ->assertSet('step', 'preview')
@@ -222,6 +224,100 @@ class AiWeekGeneratorTest extends TestCase
             ->call('apply');
 
         $this->assertSame(2, MealPlanEntry::where('meal_plan_id', $plan->id)->count());
+    }
+
+    public function test_custom_date_range_is_used_for_apply(): void
+    {
+        Http::fake();
+
+        $user = $this->onboardedUser();
+        $plan = app(MealPlannerService::class)->ensureDefaultPlan($user);
+        $this->createCiqualFood('Riz cuit');
+
+        $plannerStart = now()->startOfWeek()->toDateString();
+        $customStart = now()->startOfWeek()->addDays(3)->toDateString();
+        $customEnd = now()->startOfWeek()->addDays(4)->toDateString();
+
+        $json = json_encode([
+            'days' => [
+                [
+                    'date' => $customStart,
+                    'slots' => [
+                        'breakfast' => [],
+                        'lunch' => [['label' => 'Riz cuit', 'quantity_g' => 110]],
+                        'dinner' => [],
+                        'morning_snack' => [],
+                        'afternoon_snack' => [],
+                        'night_snack' => [],
+                    ],
+                ],
+                [
+                    'date' => $customEnd,
+                    'slots' => [
+                        'breakfast' => [],
+                        'lunch' => [['label' => 'Riz cuit', 'quantity_g' => 120]],
+                        'dinner' => [],
+                        'morning_snack' => [],
+                        'afternoon_snack' => [],
+                        'night_snack' => [],
+                    ],
+                ],
+            ],
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(AiWeekGenerator::class, [
+                'mealPlanId' => $plan->id,
+                'weekStart' => $plannerStart,
+                'horizonDays' => 7,
+                'canEdit' => true,
+            ])
+            ->call('open')
+            ->set('rangeStart', $customStart)
+            ->set('rangeEnd', $customEnd)
+            ->call('goToPrompt')
+            ->assertSet('step', 'prompt')
+            ->set('rawResponse', $json)
+            ->call('parsePastedResponse')
+            ->assertSet('step', 'preview')
+            ->call('apply');
+
+        $this->assertTrue(
+            MealPlanEntry::query()
+                ->where('meal_plan_id', $plan->id)
+                ->whereDate('planned_on', $customStart)
+                ->where('quantity_g', 110)
+                ->exists()
+        );
+        $this->assertTrue(
+            MealPlanEntry::query()
+                ->where('meal_plan_id', $plan->id)
+                ->whereDate('planned_on', $customEnd)
+                ->where('quantity_g', 120)
+                ->exists()
+        );
+        $this->assertSame(2, MealPlanEntry::where('meal_plan_id', $plan->id)->count());
+    }
+
+    public function test_rejects_inverted_date_range(): void
+    {
+        $user = $this->onboardedUser();
+        $plan = app(MealPlannerService::class)->ensureDefaultPlan($user);
+        $start = now()->startOfWeek()->toDateString();
+
+        Livewire::actingAs($user)
+            ->test(AiWeekGenerator::class, [
+                'mealPlanId' => $plan->id,
+                'weekStart' => $start,
+                'horizonDays' => 7,
+                'canEdit' => true,
+            ])
+            ->call('open')
+            ->set('rangeStart', $start)
+            ->set('rangeEnd', now()->startOfWeek()->subDay()->toDateString())
+            ->call('goToPrompt')
+            ->assertSet('step', 'consignes')
+            ->assertSet('errorMessage', 'La date de fin doit être ≥ à la date de début.');
     }
 
     public function test_ai_settings_page_saves_key(): void

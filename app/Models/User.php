@@ -12,8 +12,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'email_verified_at', 'onboarding_completed_at', 'friend_code', 'brightshell_id', 'brightshield_linked_at'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'email', 'password', 'email_verified_at', 'onboarding_completed_at', 'friend_code', 'brightshell_id', 'brightshield_linked_at', 'ai_api_key', 'ai_api_base_url', 'ai_api_model'])]
+#[Hidden(['password', 'remember_token', 'ai_api_key'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -26,7 +26,13 @@ class User extends Authenticatable
             'onboarding_completed_at' => 'datetime',
             'brightshield_linked_at' => 'datetime',
             'password' => 'hashed',
+            'ai_api_key' => 'encrypted',
         ];
+    }
+
+    public function hasAiApiConfigured(): bool
+    {
+        return filled($this->ai_api_key);
     }
 
     protected static function booted(): void

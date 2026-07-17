@@ -34,6 +34,16 @@ return [
         'app_key' => env('EDAMAM_APP_KEY'),
     ],
 
+    'ai' => [
+        'default_base_url' => env('FUTURMEAL_AI_DEFAULT_BASE_URL', 'https://api.openai.com/v1'),
+        'default_model' => env('FUTURMEAL_AI_DEFAULT_MODEL', 'gpt-4o-mini'),
+        'max_tokens' => (int) env('FUTURMEAL_AI_MAX_TOKENS', 8000),
+        'timeout' => (int) env('FUTURMEAL_AI_TIMEOUT', 90),
+        'default_quantity_g' => 150,
+        'paste_max_bytes' => 200_000,
+        'api_rate_limit_per_minute' => 5,
+    ],
+
     'max_program_members' => 6,
 
     'meal_slots' => [

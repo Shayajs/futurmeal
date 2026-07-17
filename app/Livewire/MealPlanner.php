@@ -15,6 +15,7 @@ use App\Support\MealSlots;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -139,6 +140,12 @@ class MealPlanner extends Component
         }
 
         $program->update(['lock_portions' => $locked]);
+    }
+
+    #[On('ai-week-applied')]
+    public function onAiWeekApplied(): void
+    {
+        // Re-render pour recharger les entrées après application IA.
     }
 
     private function syncContextKey(): void

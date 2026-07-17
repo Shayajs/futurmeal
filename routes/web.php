@@ -13,6 +13,7 @@ use App\Livewire\NotificationCenter;
 use App\Livewire\Onboarding\ProfileSetup;
 use App\Livewire\ProgramManager;
 use App\Livewire\RecipeEditor;
+use App\Livewire\Settings\AiSettings;
 use App\Livewire\Settings\NutritionProfile;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +43,7 @@ Route::middleware(['auth', 'verified', 'onboarded'])->group(function () {
     Route::view('settings', 'settings.index')->name('settings');
     Route::get('settings/nutrition', NutritionProfile::class)->name('settings.nutrition');
     Route::get('settings/budget', BudgetManager::class)->name('settings.budget');
+    Route::get('settings/ai', AiSettings::class)->name('settings.ai');
     Route::get('friends', FriendsPanel::class)->name('friends');
     Route::get('friends/add/{code}', FriendInviteController::class)->name('friends.add');
     Route::get('discover', MenuDiscovery::class)->name('discover');

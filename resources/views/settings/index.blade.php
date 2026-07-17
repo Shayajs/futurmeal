@@ -13,6 +13,10 @@
                 <h2 class="font-medium">Budget alimentaire</h2>
                 <p class="text-sm text-fm-muted mt-1">Prix €/kg et suivi des dépenses</p>
             </a>
+            <a href="{{ route('settings.ai') }}" wire:navigate class="fm-panel block hover:border-fm-primary transition-colors">
+                <h2 class="font-medium">Intelligence artificielle</h2>
+                <p class="text-sm text-fm-muted mt-1">Clé API perso (optionnel) pour générer la semaine</p>
+            </a>
             <a href="{{ route('friends') }}" wire:navigate class="fm-panel block hover:border-fm-primary transition-colors">
                 <h2 class="font-medium">Amis</h2>
                 <p class="text-sm text-fm-muted mt-1">Invitations, demandes, code ami</p>

@@ -39,8 +39,25 @@
                     <button wire:click="previousWeek" type="button" class="fm-btn-sm flex-1 sm:flex-none">← {{ $activeProgram ? 'Semaine' : 'Période' }}</button>
                     <button wire:click="nextWeek" type="button" class="fm-btn-sm flex-1 sm:flex-none">{{ $activeProgram ? 'Semaine' : 'Période' }} →</button>
                 </div>
+                @if ($canEdit)
+                    <button
+                        type="button"
+                        wire:click="$dispatch('open-ai-week-generator')"
+                        class="fm-btn flex-1 sm:flex-none"
+                    >
+                        Générer avec l'IA
+                    </button>
+                @endif
             </div>
         </div>
+
+        <livewire:ai-week-generator
+            :meal-plan-id="$mealPlanId"
+            :week-start="$weekStart"
+            :horizon-days="$horizonDays"
+            :can-edit="$canEdit"
+            :key="'ai-week-'.$mealPlanId.'-'.$weekStart.'-'.$horizonDays"
+        />
 
         @if (! $canEdit)
             <p class="text-sm text-fm-accent mb-4">

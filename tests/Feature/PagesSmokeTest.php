@@ -48,6 +48,7 @@ class PagesSmokeTest extends TestCase
             '/settings',
             '/settings/nutrition',
             '/settings/budget',
+            '/settings/ai',
             '/profile',
         ];
 

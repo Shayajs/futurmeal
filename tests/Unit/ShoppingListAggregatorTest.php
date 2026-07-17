@@ -97,4 +97,64 @@ class ShoppingListAggregatorTest extends TestCase
         $this->assertSame('Riz', $rows[0]['label']);
         $this->assertEquals(200.0, $rows[0]['quantity_g']);
     }
+
+    public function test_merges_same_label_across_different_food_item_ids(): void
+    {
+        $user = User::factory()->create();
+        $plan = MealPlan::create([
+            'user_id' => $user->id,
+            'name' => 'Plan',
+            'starts_on' => '2026-07-13',
+            'ends_on' => '2026-07-19',
+        ]);
+
+        $a = \App\Models\FoodItem::create([
+            'reference_type' => FoodReferenceType::Custom,
+            'name' => 'Yaourt nature',
+            'energy_kcal' => 50,
+            'protein_g' => 4,
+            'carbs_g' => 5,
+            'fat_g' => 1,
+        ]);
+        $b = \App\Models\FoodItem::create([
+            'reference_type' => FoodReferenceType::Custom,
+            'name' => 'Yaourt nature',
+            'energy_kcal' => 50,
+            'protein_g' => 4,
+            'carbs_g' => 5,
+            'fat_g' => 1,
+        ]);
+
+        MealPlanEntry::create([
+            'meal_plan_id' => $plan->id,
+            'planned_on' => '2026-07-13',
+            'meal_slot' => 'breakfast',
+            'label' => 'Yaourt nature',
+            'food_item_id' => $a->id,
+            'reference_type' => FoodReferenceType::Custom,
+            'quantity_g' => 125,
+            'sort_order' => 0,
+        ]);
+        MealPlanEntry::create([
+            'meal_plan_id' => $plan->id,
+            'planned_on' => '2026-07-14',
+            'meal_slot' => 'breakfast',
+            'label' => 'Yaourt nature · perso',
+            'food_item_id' => $b->id,
+            'reference_type' => FoodReferenceType::Custom,
+            'quantity_g' => 125,
+            'sort_order' => 0,
+        ]);
+
+        $rows = app(ShoppingListAggregator::class)->aggregate(
+            $user,
+            \Carbon\Carbon::parse('2026-07-13'),
+            \Carbon\Carbon::parse('2026-07-19'),
+        );
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('Yaourt nature', $rows[0]['label']);
+        $this->assertEquals(250.0, $rows[0]['quantity_g']);
+        $this->assertSame('label:yaourt nature', $rows[0]['key']);
+    }
 }

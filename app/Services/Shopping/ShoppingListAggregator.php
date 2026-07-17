@@ -38,10 +38,7 @@ class ShoppingListAggregator
                 }
 
                 $buckets[$key]['quantity_g'] += $line['quantity_g'];
-                // Prefer a more specific label if current is empty-ish
-                if (mb_strlen($line['label']) > mb_strlen($buckets[$key]['label'])) {
-                    $buckets[$key]['label'] = $line['label'];
-                }
+                $buckets[$key] = $this->preferRicherMeta($buckets[$key], $line);
             }
         }
 
@@ -71,7 +68,7 @@ class ShoppingListAggregator
                     $entry->reference_id,
                     $label,
                 ),
-                'label' => $label,
+                'label' => $this->displayLabel($label),
                 'quantity_g' => (float) $entry->quantity_g,
                 'reference_type' => $entry->reference_type?->value,
                 'reference_id' => $entry->reference_id,
@@ -99,7 +96,7 @@ class ShoppingListAggregator
                     $ingredient->reference_id,
                     $label,
                 ),
-                'label' => $label,
+                'label' => $this->displayLabel($label),
                 'quantity_g' => (float) $ingredient->quantity_g * $scale,
                 'reference_type' => $ingredient->reference_type?->value,
                 'reference_id' => $ingredient->reference_id,
@@ -110,20 +107,60 @@ class ShoppingListAggregator
         return $lines;
     }
 
+    /**
+     * Fusionne par libellé normalisé pour éviter les doublons
+     * (ex. plusieurs food_item_id « Yaourt nature » / « Whey isolat »).
+     */
     public function aggregateKey(
         ?int $foodItemId,
         ?string $referenceType,
         ?int $referenceId,
         string $label,
     ): string {
-        if ($foodItemId) {
-            return 'food:'.$foodItemId;
+        return 'label:'.$this->normalizeLabel($label);
+    }
+
+    public function normalizeLabel(string $label): string
+    {
+        $label = preg_replace('/\s*[·•]\s*perso\s*$/iu', '', $label) ?? $label;
+        $label = trim(preg_replace('/\s+/u', ' ', $label) ?? $label);
+
+        // Fold accents for merge (Yaourt / Yaourt…)
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $label);
+        if (is_string($ascii) && $ascii !== '') {
+            $label = $ascii;
         }
 
-        if ($referenceType && $referenceId) {
-            return $referenceType.':'.$referenceId;
+        return mb_strtolower($label);
+    }
+
+    private function displayLabel(string $label): string
+    {
+        $label = preg_replace('/\s*[·•]\s*perso\s*$/iu', '', $label) ?? $label;
+
+        return trim(preg_replace('/\s+/u', ' ', $label) ?? $label);
+    }
+
+    /**
+     * @param  array{key: string, label: string, quantity_g: float, reference_type: ?string, reference_id: ?int, food_item_id: ?int}  $current
+     * @param  array{key: string, label: string, quantity_g: float, reference_type: ?string, reference_id: ?int, food_item_id: ?int}  $incoming
+     * @return array{key: string, label: string, quantity_g: float, reference_type: ?string, reference_id: ?int, food_item_id: ?int}
+     */
+    private function preferRicherMeta(array $current, array $incoming): array
+    {
+        if (mb_strlen($incoming['label']) > mb_strlen($current['label'])) {
+            $current['label'] = $incoming['label'];
         }
 
-        return 'label:'.mb_strtolower(trim($label));
+        // Prefer a catalogue reference when available
+        if ($current['food_item_id'] === null && $incoming['food_item_id'] !== null) {
+            $current['food_item_id'] = $incoming['food_item_id'];
+        }
+        if ($current['reference_type'] === null && $incoming['reference_type'] !== null) {
+            $current['reference_type'] = $incoming['reference_type'];
+            $current['reference_id'] = $incoming['reference_id'];
+        }
+
+        return $current;
     }
 }

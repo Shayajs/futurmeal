@@ -26,23 +26,16 @@ class ShoppingListService
             ->whereDate('range_end', $end)
             ->first();
 
-        $created = false;
         if (! $list) {
             $list = ShoppingList::query()->create([
                 'user_id' => $user->id,
                 'range_start' => $start,
                 'range_end' => $end,
             ]);
-            $created = true;
         }
 
-        $needsSync = $forceSync
-            || $created
-            || ! $list->items()->where('source', ShoppingItemSource::Aggregated)->exists();
-
-        if ($needsSync) {
-            $this->syncAggregated($user, $list);
-        }
+        // Always refresh aggregated lines so duplicates merge and qty stay current.
+        $this->syncAggregated($user, $list);
 
         return $list->fresh('items');
     }
@@ -55,27 +48,54 @@ class ShoppingListService
             $list->range_end->copy()->startOfDay(),
         );
 
-        $keys = collect($aggregated)->pluck('key')->all();
-
         DB::transaction(function () use ($list, $aggregated) {
-            $existing = $list->items()
+            $existingItems = $list->items()
                 ->where('source', ShoppingItemSource::Aggregated)
-                ->get()
-                ->keyBy('aggregate_key');
+                ->get();
+
+            $byKey = $existingItems->keyBy('aggregate_key');
+            $byLabel = $existingItems->groupBy(
+                fn (ShoppingListItem $item) => $this->aggregator->normalizeLabel($item->label)
+            );
 
             $sort = 0;
+            $seenIds = [];
+
             foreach ($aggregated as $row) {
-                $item = $existing->get($row['key']);
-                if ($item) {
+                $norm = $this->aggregator->normalizeLabel($row['label']);
+                $item = $byKey->get($row['key']);
+
+                if (! $item) {
+                    $candidates = $byLabel->get($norm, collect());
+                    $item = $candidates->first(fn (ShoppingListItem $i) => ! isset($seenIds[$i->id]));
+                }
+
+                if ($item && ! isset($seenIds[$item->id])) {
+                    // Merge checked state if several old duplicates matched this label
+                    $wasChecked = $item->is_checked;
+                    $siblings = ($byLabel->get($norm) ?? collect())
+                        ->filter(fn (ShoppingListItem $i) => $i->id !== $item->id && ! isset($seenIds[$i->id]));
+
+                    foreach ($siblings as $sibling) {
+                        if ($sibling->is_checked) {
+                            $wasChecked = true;
+                        }
+                        $sibling->delete();
+                        $seenIds[$sibling->id] = true;
+                    }
+
                     $item->update([
+                        'aggregate_key' => $row['key'],
                         'label' => $row['label'],
                         'quantity_g' => $row['quantity_g'],
                         'reference_type' => $row['reference_type'],
                         'reference_id' => $row['reference_id'],
                         'food_item_id' => $row['food_item_id'],
+                        'is_checked' => $wasChecked,
+                        'checked_at' => $wasChecked ? ($item->checked_at ?? now()) : null,
                         'sort_order' => $sort++,
                     ]);
-                    $existing->forget($row['key']);
+                    $seenIds[$item->id] = true;
                     continue;
                 }
 
@@ -92,13 +112,18 @@ class ShoppingListService
                 ]);
             }
 
-            // Remove unchecked aggregated items no longer in the plan.
-            // Keep checked orphans so the user doesn't lose "already bought" state.
-            foreach ($existing as $orphan) {
+            foreach ($existingItems as $orphan) {
+                if (isset($seenIds[$orphan->id])) {
+                    continue;
+                }
+
+                // Refresh in case deleted as sibling
+                if (! ShoppingListItem::query()->whereKey($orphan->id)->exists()) {
+                    continue;
+                }
+
                 if ($orphan->is_checked) {
-                    $orphan->update([
-                        'sort_order' => $sort++,
-                    ]);
+                    $orphan->update(['sort_order' => $sort++]);
                     continue;
                 }
 
@@ -137,7 +162,6 @@ class ShoppingListService
     public function deleteItem(User $user, int $itemId): void
     {
         $item = $this->findOwnedItem($user, $itemId);
-        // Allow deleting custom always; aggregated only if user insists (UI only shows delete on custom)
         $item->delete();
     }
 

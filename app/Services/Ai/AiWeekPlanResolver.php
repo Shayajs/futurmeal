@@ -330,14 +330,23 @@ class AiWeekPlanResolver
             return 0.0;
         }
 
-        if ($n === $h || str_contains($h, $n) || str_contains($n, $h)) {
-            return 95.0;
+        if ($n === $h) {
+            return 100.0;
+        }
+
+        // Contenance exacte du libellé (pas d'un seul token)
+        if (str_contains($h, $n) || str_contains($n, $h)) {
+            return 92.0;
         }
 
         similar_text($n, $h, $percent);
 
         $nTokens = $this->significantTokens($needle);
         $hTokens = $this->significantTokens($haystack);
+        if ($nTokens === [] || $hTokens === []) {
+            return (float) $percent;
+        }
+
         $overlap = 0;
         foreach ($nTokens as $t) {
             foreach ($hTokens as $ht) {
@@ -347,9 +356,13 @@ class AiWeekPlanResolver
                 }
             }
         }
-        $tokenScore = $nTokens === [] ? 0.0 : ($overlap / count($nTokens)) * 100.0;
 
-        return max($percent, $tokenScore);
+        // Pénalise les libellés longs où un seul token matche (ex. Amandes → Lait d'amande)
+        $coverage = $overlap / count($nTokens);
+        $specificity = count($nTokens) / max(count($hTokens), count($nTokens));
+        $tokenScore = $coverage * $specificity * 100.0;
+
+        return max((float) $percent, $tokenScore);
     }
 
     /**

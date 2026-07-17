@@ -16,6 +16,7 @@ new class extends Component
     $navLinks = [
         ['route' => 'dashboard', 'label' => 'Dashboard', 'match' => 'dashboard'],
         ['route' => 'planner', 'label' => 'Plan', 'match' => 'planner*'],
+        ['route' => 'shopping', 'label' => 'Courses', 'match' => 'shopping'],
         ['route' => 'recipes.index', 'label' => 'Ensembles', 'match' => 'recipes.*'],
         ['route' => 'programs', 'label' => 'Programmes', 'match' => 'programs'],
         ['route' => 'metrics', 'label' => 'Corps', 'match' => 'metrics'],

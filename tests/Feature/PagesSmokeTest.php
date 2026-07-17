@@ -41,6 +41,7 @@ class PagesSmokeTest extends TestCase
             '/dashboard',
             '/planner',
             '/planner/day/'.today()->toDateString(),
+            '/shopping',
             '/charts',
             '/friends',
             '/discover',

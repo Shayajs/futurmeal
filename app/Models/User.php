@@ -79,6 +79,11 @@ class User extends Authenticatable
         return $this->hasMany(BudgetEntry::class);
     }
 
+    public function shoppingLists(): HasMany
+    {
+        return $this->hasMany(ShoppingList::class);
+    }
+
     public function sentFriendships(): HasMany
     {
         return $this->hasMany(Friendship::class);

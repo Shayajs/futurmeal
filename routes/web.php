@@ -15,6 +15,7 @@ use App\Livewire\ProgramManager;
 use App\Livewire\RecipeEditor;
 use App\Livewire\Settings\AiSettings;
 use App\Livewire\Settings\NutritionProfile;
+use App\Livewire\ShoppingList;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome');
@@ -33,6 +34,7 @@ Route::middleware(['auth', 'verified', 'onboarded'])->group(function () {
     Route::get('charts', ChartsExplorer::class)->name('charts');
     Route::get('planner', MealPlanner::class)->name('planner');
     Route::get('planner/day/{date}', DayEditor::class)->name('planner.day');
+    Route::get('shopping', ShoppingList::class)->name('shopping');
     Route::get('programs', ProgramManager::class)->name('programs');
     Route::get('programs/join/{token}', ProgramInviteController::class)->name('programs.join');
     Route::get('recipes', [RecipeController::class, 'index'])->name('recipes.index');

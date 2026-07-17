@@ -42,17 +42,19 @@ class GoalIntensityAndFloorTest extends TestCase
         $this->assertSame($base + 300, $withSport);
     }
 
-    public function test_clamp_raises_below_floor(): void
+    public function test_clamp_helper_raises_below_floor_when_used(): void
     {
         $calc = app(BodyMetricCalculator::class);
 
+        $this->assertTrue($calc->isBelowFloor(900, Gender::Male, 1400));
         $this->assertSame(1500, $calc->clampDailyTarget(900, Gender::Male, 1400));
         $this->assertSame(2000, $calc->clampDailyTarget(2000, Gender::Male, 1400));
     }
 
-    public function test_extreme_has_disclaimer(): void
+    public function test_extreme_and_aggressive_have_disclaimers(): void
     {
         $this->assertNotNull(GoalIntensity::Extreme->disclaimer());
+        $this->assertNotNull(GoalIntensity::Aggressive->disclaimer());
         $this->assertNull(GoalIntensity::Soft->disclaimer());
     }
 }

@@ -106,28 +106,28 @@
             </div>
 
             <div class="flex items-baseline justify-between pt-2">
-                <h3 class="text-sm font-medium">Ajustement manuel (borné)</h3>
+                <h3 class="text-sm font-medium">Ajustement manuel</h3>
             </div>
 
             <div class="space-y-2">
                 <input
                     type="range"
-                    min="-1000"
-                    max="500"
+                    min="-1200"
+                    max="800"
                     step="50"
                     wire:model.live="calorie_adjustment"
                 >
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <span class="text-caption text-fm-muted shrink-0">-1000 (extrême)</span>
+                    <span class="text-caption text-fm-muted shrink-0">-1200</span>
                     <x-fm.number
                         wrap="w-full sm:w-32"
-                        min="-1000"
-                        max="500"
+                        min="-1200"
+                        max="800"
                         step="10"
                         wire:model.live="calorie_adjustment"
                         class="text-center"
                     />
-                    <span class="text-caption text-fm-muted shrink-0 sm:text-right">+500 (surplus max)</span>
+                    <span class="text-caption text-fm-muted shrink-0 sm:text-right">+800</span>
                 </div>
             </div>
 
@@ -143,9 +143,15 @@
                 </p>
             @endif
 
-            @if ($this->wasClamped && $floor_daily_kcal)
+            @if ($this->aggressivePaceWarning)
                 <p class="text-sm text-fm-accent">
-                    Objectif relevé au plancher santé ({{ $floor_daily_kcal }} kcal/j) — on ne descend pas sous le MB ni sous 1200/1500 selon le profil.
+                    Rythme agressif : possible, mais à surveiller (fatigue, récupération, humeur). Ce n’est pas un avis médical — un professionnel de santé reste le référent.
+                </p>
+            @endif
+
+            @if ($this->belowFloorWarning && $floor_daily_kcal)
+                <p class="text-sm text-fm-accent">
+                    Attention : ton objectif ({{ $this->effectiveTarget }} kcal) est sous le plancher indicatif ({{ $floor_daily_kcal }} kcal/j, MB / 1200–1500). Tu peux le garder, mais c’est déconseillé sans suivi professionnel.
                 </p>
             @endif
 
@@ -155,7 +161,7 @@
                     Forcer un objectif kcal manuel
                 </label>
                 @if ($override_calories)
-                    <x-fm.number min="1000" max="6000" step="50" wire:model.live="daily_calorie_target" placeholder="kcal / jour" />
+                    <x-fm.number min="800" max="6000" step="50" wire:model.live="daily_calorie_target" placeholder="kcal / jour" />
                 @endif
             </div>
 
@@ -165,7 +171,7 @@
             </div>
 
             <p class="text-xs text-fm-muted">
-                FuturMeal est un outil indicatif, pas un avis médical. En cas de pathologie, grossesse, TCA ou traitement, consulte un professionnel de santé.
+                FuturMeal est un outil indicatif, pas un avis médical. Aucune valeur n’est bloquée : les alertes sont des mises en garde. En cas de pathologie, grossesse, TCA ou traitement, consulte un professionnel de santé.
             </p>
         </div>
 

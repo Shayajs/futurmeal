@@ -64,6 +64,27 @@ class NutritionIntensityAndAiPrefsTest extends TestCase
         $this->assertSame(-750, $profile->calorie_adjustment);
     }
 
+    public function test_extreme_intensity_warns_but_does_not_clamp_target(): void
+    {
+        $user = $this->onboardedUser();
+
+        $component = Livewire::actingAs($user)
+            ->test(NutritionProfile::class)
+            ->set('goal_intensity', 'extreme')
+            ->assertSet('calorie_adjustment', -1000)
+            ->assertSet('aggressivePaceWarning', true);
+
+        $raw = $component->get('maintenance_tdee') + (-1000);
+        $component
+            ->assertSet('effectiveTarget', $raw)
+            ->assertSee('Rythme agressif')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(-1000, $user->fresh()->profile->calorie_adjustment);
+        $this->assertSame($raw, $user->fresh()->profile->daily_calorie_target);
+    }
+
     public function test_ai_modal_prefills_and_saves_preferences(): void
     {
         $user = $this->onboardedUser();

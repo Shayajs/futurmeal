@@ -100,7 +100,7 @@ class BodyMetricCalculator
 
     /**
      * Plancher d'apport quotidien indicatif (jamais sous le MB).
-     * Homme ≥ 1500, femme/autre ≥ 1200.
+     * Homme ≥ 1500, femme/autre ≥ 1200 — pour mises en garde uniquement.
      */
     public function floorDailyKcal(Gender $gender, ?int $bmr = null): int
     {
@@ -116,6 +116,15 @@ class BodyMetricCalculator
         return $genderFloor;
     }
 
+    public function isBelowFloor(int $target, Gender $gender, ?int $bmr = null): bool
+    {
+        return $target < $this->floorDailyKcal($gender, $bmr);
+    }
+
+    /**
+     * Helper optionnel : relève au plancher. L’UI nutrition n’impose plus ce clamp
+     * (mise en garde seulement) ; conserve pour usages explicites.
+     */
     public function clampDailyTarget(int $target, Gender $gender, ?int $bmr = null): int
     {
         return max($this->floorDailyKcal($gender, $bmr), min(6000, $target));

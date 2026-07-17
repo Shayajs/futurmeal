@@ -40,8 +40,8 @@ enum GoalIntensity: string
     public function disclaimer(): ?string
     {
         return match ($this) {
-            self::Extreme => 'Niveau Extrême : déficit/surplus maximal dans les limites indicatives ACSM. Non adapté à tous les profils. Consulte un professionnel de santé avant de poursuivre.',
-            self::Aggressive => 'Niveau Agressif : exige une bonne adhérence (sommeil, protéines, entraînement). Surveille ta fatigue et ton humeur.',
+            self::Extreme => 'Niveau Extrême : rythme très soutenu. Autorisé, mais à manier avec prudence — consulte un professionnel de santé si tu as un doute.',
+            self::Aggressive => 'Niveau Agressif : exige une bonne récupération (sommeil, protéines, entraînement). Surveille fatigue et humeur — mise en garde, pas un blocage.',
             default => null,
         };
     }

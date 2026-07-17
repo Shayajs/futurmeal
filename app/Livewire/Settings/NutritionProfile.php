@@ -119,24 +119,15 @@ class NutritionProfile extends Component
 
     public function getEffectiveTargetProperty(): ?int
     {
-        $calculator = app(BodyMetricCalculator::class);
-        $gender = Auth::user()->profile?->gender;
-
         if ($this->override_calories && $this->daily_calorie_target) {
-            return $gender
-                ? $calculator->clampDailyTarget($this->daily_calorie_target, $gender, $this->basal_metabolic_rate)
-                : $this->daily_calorie_target;
+            return (int) $this->daily_calorie_target;
         }
 
         if ($this->maintenance_tdee === null) {
             return null;
         }
 
-        $raw = $this->maintenance_tdee + $this->calorie_adjustment;
-
-        return $gender
-            ? $calculator->clampDailyTarget($raw, $gender, $this->basal_metabolic_rate)
-            : $raw;
+        return $this->maintenance_tdee + $this->calorie_adjustment;
     }
 
     public function getWeeklyKgProperty(): float
@@ -149,15 +140,22 @@ class NutritionProfile extends Component
         return ! $this->override_calories && abs($this->calorie_adjustment) < 100;
     }
 
-    public function getWasClampedProperty(): bool
+    public function getBelowFloorWarningProperty(): bool
     {
-        if ($this->maintenance_tdee === null || $this->override_calories) {
+        if ($this->effectiveTarget === null || $this->floor_daily_kcal === null) {
             return false;
         }
 
-        $raw = $this->maintenance_tdee + $this->calorie_adjustment;
+        return $this->effectiveTarget < $this->floor_daily_kcal;
+    }
 
-        return $this->effectiveTarget !== null && $this->effectiveTarget > $raw;
+    public function getAggressivePaceWarningProperty(): bool
+    {
+        if ($this->goal_type === GoalType::WeightLoss->value) {
+            return $this->calorie_adjustment <= -750;
+        }
+
+        return $this->calorie_adjustment >= 400;
     }
 
     public function save(): void
@@ -171,9 +169,9 @@ class NutritionProfile extends Component
             'planning_horizon_days' => 'required|integer|in:3,7,14,30',
             'activity_level' => 'required',
             'goal_intensity' => 'required|in:soft,moderate,aggressive,extreme',
-            'calorie_adjustment' => 'required|integer|min:-1000|max:500',
+            'calorie_adjustment' => 'required|integer|min:-1200|max:800',
             'sport_kcal_per_day' => 'required|integer|min:0|max:2000',
-            'daily_calorie_target' => 'nullable|integer|min:1000|max:6000',
+            'daily_calorie_target' => 'nullable|integer|min:800|max:6000',
             'target_weight_kg' => [
                 'required', 'numeric', 'min:30', 'max:300',
                 Rule::when($this->goal_type === GoalType::WeightLoss->value && $latestWeight, 'lt:'.$latestWeight),

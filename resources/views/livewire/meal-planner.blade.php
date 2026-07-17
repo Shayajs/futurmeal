@@ -47,9 +47,94 @@
                     >
                         Générer avec l'IA
                     </button>
+                    <button
+                        type="button"
+                        wire:click="openRangePanel('copy')"
+                        class="fm-btn-sm flex-1 sm:flex-none"
+                    >
+                        Dupliquer
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="openRangePanel('clear')"
+                        class="fm-btn-sm flex-1 sm:flex-none"
+                    >
+                        Vider
+                    </button>
                 @endif
             </div>
         </div>
+
+        @if ($canEdit && $showRangePanel)
+            <div class="mb-6 p-4 rounded-lg bg-fm-bg border border-fm-border space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-sm font-medium">
+                        {{ $rangeAction === 'copy' ? 'Dupliquer une journée / plage' : 'Vider une journée / plage' }}
+                    </h2>
+                    <div class="flex gap-2 text-xs">
+                        <button
+                            type="button"
+                            wire:click="$set('rangeAction', 'copy')"
+                            @class([
+                                'px-2 py-1 rounded border',
+                                'border-fm-primary text-fm-primary' => $rangeAction === 'copy',
+                                'border-fm-border text-fm-muted' => $rangeAction !== 'copy',
+                            ])
+                        >Dupliquer</button>
+                        <button
+                            type="button"
+                            wire:click="$set('rangeAction', 'clear')"
+                            @class([
+                                'px-2 py-1 rounded border',
+                                'border-fm-primary text-fm-primary' => $rangeAction === 'clear',
+                                'border-fm-border text-fm-muted' => $rangeAction !== 'clear',
+                            ])
+                        >Vider</button>
+                    </div>
+                </div>
+
+                @if ($rangeError)
+                    <p class="text-sm text-fm-accent">{{ $rangeError }}</p>
+                @endif
+
+                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <label class="block text-sm">
+                        <span class="text-caption text-fm-muted">{{ $rangeAction === 'copy' ? 'Source — du' : 'Du' }}</span>
+                        <input type="date" wire:model="rangeSourceStart" class="fm-input mt-1 w-full">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-caption text-fm-muted">{{ $rangeAction === 'copy' ? 'Source — au' : 'Au' }}</span>
+                        <input type="date" wire:model="rangeSourceEnd" class="fm-input mt-1 w-full">
+                    </label>
+                    @if ($rangeAction === 'copy')
+                        <label class="block text-sm">
+                            <span class="text-caption text-fm-muted">Coller à partir du</span>
+                            <input type="date" wire:model="rangeTargetStart" class="fm-input mt-1 w-full">
+                        </label>
+                    @endif
+                </div>
+
+                <p class="text-xs text-fm-muted">
+                    @if ($rangeAction === 'copy')
+                        Chaque jour de la source remplace le jour cible correspondant (jour 1 → date de collage, jour 2 → lendemain, etc.). Max {{ \App\Services\Plan\PlanRangeService::MAX_DAYS }} jours.
+                    @else
+                        Supprime toutes les entrées de la plage. Max {{ \App\Services\Plan\PlanRangeService::MAX_DAYS }} jours.
+                    @endif
+                </p>
+
+                <div class="flex flex-wrap gap-2 justify-end">
+                    <button type="button" wire:click="closeRangePanel" class="fm-btn-sm">Annuler</button>
+                    <button
+                        type="button"
+                        wire:click="applyRangeAction"
+                        wire:confirm="{{ $rangeAction === 'clear' ? 'Vider cette plage ? Les repas seront définitivement supprimés.' : 'Dupliquer et remplacer les jours cibles ?' }}"
+                        class="fm-btn"
+                    >
+                        {{ $rangeAction === 'copy' ? 'Dupliquer' : 'Vider la plage' }}
+                    </button>
+                </div>
+            </div>
+        @endif
 
         <livewire:ai-week-generator
             :meal-plan-id="$mealPlanId"

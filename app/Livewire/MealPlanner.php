@@ -8,12 +8,15 @@ use App\Models\Program;
 use App\Models\User;
 use App\Services\Nutrition\MealPlanEntryCalculator;
 use App\Services\Nutrition\MealPlannerService;
+use App\Services\Plan\PlanRangeService;
 use App\Services\Plan\PlanViewContextService;
 use App\Services\Program\ProgramPlanService;
 use App\Services\Social\PlanShareService;
 use App\Support\MealSlots;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -38,6 +41,19 @@ class MealPlanner extends Component
     public ?int $inviteFriendId = null;
 
     public bool $inviteCanEdit = false;
+
+    public bool $showRangePanel = false;
+
+    /** copy | clear */
+    public string $rangeAction = 'clear';
+
+    public string $rangeSourceStart = '';
+
+    public string $rangeSourceEnd = '';
+
+    public string $rangeTargetStart = '';
+
+    public ?string $rangeError = null;
 
     public function mount(
         ProgramPlanService $programPlan,
@@ -146,6 +162,90 @@ class MealPlanner extends Component
     public function onAiWeekApplied(): void
     {
         // Re-render pour recharger les entrées après application IA.
+    }
+
+    public function openRangePanel(string $action = 'clear'): void
+    {
+        if (! $this->canEdit) {
+            return;
+        }
+
+        $this->rangeAction = in_array($action, ['copy', 'clear'], true) ? $action : 'clear';
+        $this->rangeError = null;
+        $start = Carbon::parse($this->weekStart)->toDateString();
+        $end = Carbon::parse($this->weekStart)->addDays($this->periodLength() - 1)->toDateString();
+        $this->rangeSourceStart = $start;
+        $this->rangeSourceEnd = $end;
+        $this->rangeTargetStart = Carbon::parse($end)->addDay()->toDateString();
+        $this->showRangePanel = true;
+        $this->showInvitePanel = false;
+    }
+
+    public function closeRangePanel(): void
+    {
+        $this->showRangePanel = false;
+        $this->rangeError = null;
+    }
+
+    public function applyRangeAction(PlanRangeService $ranges): void
+    {
+        if (! $this->canEdit || ! $this->mealPlanId) {
+            return;
+        }
+
+        $this->rangeError = null;
+
+        try {
+            if ($this->rangeAction === 'clear') {
+                $this->validate([
+                    'rangeSourceStart' => ['required', 'date'],
+                    'rangeSourceEnd' => ['required', 'date', 'after_or_equal:rangeSourceStart'],
+                ], [
+                    'rangeSourceEnd.after_or_equal' => 'La date de fin doit être ≥ au début.',
+                ]);
+
+                $result = $ranges->clearRange(
+                    Auth::user(),
+                    $this->programId,
+                    $this->mealPlanId,
+                    $this->rangeSourceStart,
+                    $this->rangeSourceEnd,
+                );
+
+                session()->flash(
+                    'planner-status',
+                    "Plage vidée : {$result['days']} jour(s), {$result['deleted']} entrée(s) supprimée(s).",
+                );
+            } else {
+                $this->validate([
+                    'rangeSourceStart' => ['required', 'date'],
+                    'rangeSourceEnd' => ['required', 'date', 'after_or_equal:rangeSourceStart'],
+                    'rangeTargetStart' => ['required', 'date'],
+                ], [
+                    'rangeSourceEnd.after_or_equal' => 'La date de fin source doit être ≥ au début.',
+                ]);
+
+                $result = $ranges->copyRange(
+                    Auth::user(),
+                    $this->programId,
+                    $this->mealPlanId,
+                    $this->rangeSourceStart,
+                    $this->rangeSourceEnd,
+                    $this->rangeTargetStart,
+                );
+
+                session()->flash(
+                    'planner-status',
+                    "Duplication : {$result['copied_days']} jour(s), {$result['created']} entrée(s) créée(s).",
+                );
+            }
+
+            $this->closeRangePanel();
+        } catch (ValidationException $e) {
+            $this->rangeError = collect($e->validator->errors()->all())->first();
+        } catch (InvalidArgumentException $e) {
+            $this->rangeError = $e->getMessage();
+        }
     }
 
     private function syncContextKey(): void

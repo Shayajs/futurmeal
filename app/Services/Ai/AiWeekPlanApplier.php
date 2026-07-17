@@ -9,6 +9,8 @@ use App\Models\MealPlanEntry;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Services\Budget\BudgetService;
+use App\Services\Nutrition\CustomFoodService;
+use App\Support\MacroEnergy;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -16,11 +18,12 @@ class AiWeekPlanApplier
 {
     public function __construct(
         private BudgetService $budget,
+        private CustomFoodService $customFoods,
     ) {}
 
     /**
      * Remplace les entrées de la période par le draft résolu.
-     * Les items non résolus sont ignorés.
+     * Les items non résolus (sans match ni macros IA) sont ignorés.
      *
      * @return array{created: int, skipped: int}
      */
@@ -40,7 +43,6 @@ class AiWeekPlanApplier
             ->filter()
             ->unique();
 
-        // Plage demandée + jours additionnels renvoyés par l'IA
         $clearDates = $rangeDates->merge($draftDates)->unique()->values()->all();
 
         $created = 0;
@@ -64,6 +66,9 @@ class AiWeekPlanApplier
 
                 if ($item->recipeId) {
                     $created += $this->applyRecipe($user, $mealPlanId, $item, $sort);
+                } elseif ($item->matchKind === 'ai_estimate') {
+                    $this->applyAiEstimate($user, $mealPlanId, $item, $sort);
+                    $created++;
                 } else {
                     $this->applyFood($user, $mealPlanId, $item, $sort);
                     $created++;
@@ -86,6 +91,7 @@ class AiWeekPlanApplier
         }
 
         $count = 0;
+        $firstEntry = null;
 
         if ($recipe->is_macro_preset) {
             $entry = MealPlanEntry::create([
@@ -97,7 +103,7 @@ class AiWeekPlanApplier
                 'portions' => 1,
                 'sort_order' => $sort++,
             ]);
-            $this->budget->syncEntryCost($user, $entry);
+            $this->syncCostWithAiFallback($user, $entry, $item->priceEur);
             $count++;
 
             return $count;
@@ -117,10 +123,10 @@ class AiWeekPlanApplier
                 'sort_order' => $sort++,
             ]);
             $this->budget->syncEntryCost($user, $entry);
+            $firstEntry ??= $entry;
             $count++;
         }
 
-        // Recette sans ingrédients : au moins une ligne label
         if ($count === 0) {
             $entry = MealPlanEntry::create([
                 'meal_plan_id' => $mealPlanId,
@@ -131,8 +137,20 @@ class AiWeekPlanApplier
                 'portions' => 1,
                 'sort_order' => $sort++,
             ]);
-            $this->budget->syncEntryCost($user, $entry);
+            $this->syncCostWithAiFallback($user, $entry, $item->priceEur);
             $count++;
+        } elseif ($firstEntry && $item->priceEur !== null) {
+            $priced = MealPlanEntry::query()
+                ->where('meal_plan_id', $mealPlanId)
+                ->whereDate('planned_on', $item->date)
+                ->where('meal_slot', $item->slot)
+                ->where('recipe_id', $recipe->id)
+                ->whereNotNull('estimated_cost')
+                ->exists();
+
+            if (! $priced) {
+                $firstEntry->update(['estimated_cost' => round($item->priceEur, 2)]);
+            }
         }
 
         return $count;
@@ -154,6 +172,63 @@ class AiWeekPlanApplier
             'sort_order' => $sort++,
         ]);
 
+        $this->syncCostWithAiFallback($user, $entry, $item->priceEur);
+    }
+
+    /**
+     * Pas de match catalogue : crée un aliment custom (macros IA → per 100 g) puis l’applique.
+     */
+    private function applyAiEstimate(User $user, int $mealPlanId, AiWeekPlanItemDraft $item, int &$sort): void
+    {
+        $quantityG = $item->quantityG ?? (float) config('futurmeal.ai.default_quantity_g', 150);
+        $quantityG = max(1.0, $quantityG);
+        $scale = 100.0 / $quantityG;
+
+        $protein = (float) ($item->proteinG ?? 0);
+        $carbs = (float) ($item->carbsG ?? 0);
+        $fat = (float) ($item->fatG ?? 0);
+        $energy = (float) ($item->energyKcal ?? 0);
+
+        if ($energy <= 0 && ($protein + $carbs + $fat) > 0) {
+            $energy = MacroEnergy::kcalFromMacros($protein, $carbs, $fat);
+        }
+
+        $food = $this->customFoods->create(
+            $user,
+            $item->label,
+            [
+                'energy_kcal' => round($energy * $scale, 2),
+                'protein_g' => round($protein * $scale, 2),
+                'carbs_g' => round($carbs * $scale, 2),
+                'fat_g' => round($fat * $scale, 2),
+            ],
+            brand: 'Estimation IA',
+            barcode: null,
+            shareWithCommunity: false,
+        );
+
+        $entry = MealPlanEntry::create([
+            'meal_plan_id' => $mealPlanId,
+            'planned_on' => $item->date,
+            'meal_slot' => $item->slot,
+            'reference_type' => FoodReferenceType::Custom,
+            'reference_id' => $food->id,
+            'food_item_id' => $food->id,
+            'label' => $item->label,
+            'quantity_g' => $quantityG,
+            'sort_order' => $sort++,
+        ]);
+
+        $this->syncCostWithAiFallback($user, $entry, $item->priceEur);
+    }
+
+    private function syncCostWithAiFallback(User $user, MealPlanEntry $entry, ?float $aiPriceEur): void
+    {
         $this->budget->syncEntryCost($user, $entry);
+        $entry->refresh();
+
+        if ($entry->estimated_cost === null && $aiPriceEur !== null) {
+            $entry->update(['estimated_cost' => round($aiPriceEur, 2)]);
+        }
     }
 }

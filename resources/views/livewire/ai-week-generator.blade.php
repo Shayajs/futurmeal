@@ -170,7 +170,7 @@
                             <p class="text-sm">
                                 <span class="text-fm-primary">{{ $draft->resolvedCount() }} résolu(s)</span>
                                 @if ($draft->unresolvedCount() > 0)
-                                    · <span class="text-fm-accent">{{ $draft->unresolvedCount() }} non résolu(s) (ignorés à l'application)</span>
+                                    · <span class="text-fm-accent">{{ $draft->unresolvedCount() }} non résolu(s) (sans macros IA — ignorés)</span>
                                 @endif
                             </p>
 
@@ -191,6 +191,14 @@
                                                         <span class="text-xs text-fm-primary">recette</span>
                                                     @elseif ($item->matchKind === 'food')
                                                         <span class="text-xs text-fm-muted">aliment</span>
+                                                    @elseif ($item->matchKind === 'ai_estimate')
+                                                        <span class="text-xs text-fm-accent">macros IA</span>
+                                                    @endif
+                                                    @if ($item->matchKind === 'ai_estimate' && $item->proteinG !== null)
+                                                        <span class="text-xs text-fm-muted">· P{{ rtrim(rtrim(number_format($item->proteinG, 1, '.', ''), '0'), '.') }}/G{{ rtrim(rtrim(number_format($item->carbsG ?? 0, 1, '.', ''), '0'), '.') }}/L{{ rtrim(rtrim(number_format($item->fatG ?? 0, 1, '.', ''), '0'), '.') }}</span>
+                                                    @endif
+                                                    @if ($item->priceEur !== null)
+                                                        <span class="text-xs text-fm-muted">· {{ number_format($item->priceEur, 2, ',', ' ') }} €</span>
                                                     @endif
                                                     @if ($item->warning)
                                                         <span class="text-xs text-fm-accent">· {{ $item->warning }}</span>

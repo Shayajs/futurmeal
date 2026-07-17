@@ -175,6 +175,35 @@
                 <span class="text-2xl font-semibold tabular-nums text-fm-primary">{{ $this->effectiveTarget ?? '—' }} <span class="text-sm text-fm-muted font-normal">kcal/jour</span></span>
             </div>
 
+            <div class="pt-4 border-t border-fm-border space-y-3">
+                <div>
+                    <label class="text-caption text-fm-muted">Taux de protéines</label>
+                    <select wire:model.live="protein_multiplier" class="fm-input mt-1">
+                        @foreach ($proteinMultiplierOptions as $option)
+                            <option value="{{ $option->value }}">{{ $option->label() }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-fm-muted mt-1">
+                        Cible = masse maigre × multiplicateur.
+                        @if ($this->leanMassKg)
+                            MM estimée : <strong class="text-fm-text">{{ $this->leanMassKg }} kg</strong>.
+                        @else
+                            Ajoute poids (± % graisse) dans les mesures pour calculer.
+                        @endif
+                    </p>
+                </div>
+                <div class="rounded-lg bg-fm-bg border border-fm-border p-4 flex items-baseline justify-between">
+                    <span class="text-sm text-fm-muted">Objectif protéines</span>
+                    <span class="text-2xl font-semibold tabular-nums text-fm-primary">
+                        {{ $this->proteinTargetG ?? '—' }}
+                        <span class="text-sm text-fm-muted font-normal">g/jour</span>
+                    </span>
+                </div>
+                <p class="text-xs text-fm-muted">
+                    Cette cible est injectée dans le prompt IA pour éviter des plans trop bas en protéines (~50 g).
+                </p>
+            </div>
+
             <p class="text-xs text-fm-muted">
                 FuturMeal est un outil indicatif, pas un avis médical. Aucune valeur n’est bloquée : les alertes sont des mises en garde. En cas de pathologie, grossesse, TCA ou traitement, consulte un professionnel de santé.
             </p>

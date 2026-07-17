@@ -34,6 +34,15 @@ return [
         'app_key' => env('EDAMAM_APP_KEY'),
     ],
 
+    /*
+    | Facteurs énergétiques Atwater (kcal / g) pour dériver l’énergie des macros.
+    */
+    'macro_energy_factors' => [
+        'protein' => 4,
+        'carbs' => 4,
+        'fat' => 9,
+    ],
+
     'ai' => [
         'default_base_url' => env('FUTURMEAL_AI_DEFAULT_BASE_URL', 'https://api.openai.com/v1'),
         'default_model' => env('FUTURMEAL_AI_DEFAULT_MODEL', 'gpt-4o-mini'),

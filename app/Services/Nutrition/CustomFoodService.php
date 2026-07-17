@@ -6,6 +6,7 @@ use App\Data\NutrientProfile;
 use App\Enums\FoodReferenceType;
 use App\Models\FoodItem;
 use App\Models\User;
+use App\Support\MacroEnergy;
 use Illuminate\Validation\ValidationException;
 
 class CustomFoodService
@@ -38,7 +39,7 @@ class CustomFoodService
         }
 
         if ($energy <= 0 && ($protein + $carbs + $fat) > 0) {
-            $energy = ($protein * 4) + ($carbs * 4) + ($fat * 9);
+            $energy = MacroEnergy::kcalFromMacros($protein, $carbs, $fat);
         }
 
         $barcode = $barcode !== null ? trim($barcode) : null;

@@ -101,4 +101,36 @@ MD;
 
         app(AiWeekPlanParser::class)->parse('   ');
     }
+
+    public function test_parses_macros_price_and_derives_energy(): void
+    {
+        $raw = json_encode([
+            'days' => [[
+                'date' => '2026-07-20',
+                'slots' => [
+                    'breakfast' => [[
+                        'label' => 'Shaker',
+                        'quantity_g' => 30,
+                        'protein_g' => 25,
+                        'carbs_g' => 3,
+                        'fat_g' => 1,
+                        'prix_eur' => 1.2,
+                    ]],
+                    'lunch' => [],
+                    'dinner' => [],
+                    'morning_snack' => [],
+                    'afternoon_snack' => [],
+                    'night_snack' => [],
+                ],
+            ]],
+        ]);
+
+        $parsed = app(AiWeekPlanParser::class)->parse($raw, ['2026-07-20']);
+        $item = $parsed['days'][0]['slots']['breakfast'][0];
+
+        $this->assertSame(25.0, $item['protein_g']);
+        $this->assertSame(1.2, $item['price_eur']);
+        // 25*4 + 3*4 + 1*9 = 121
+        $this->assertSame(121.0, $item['energy_kcal']);
+    }
 }

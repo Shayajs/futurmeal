@@ -5,9 +5,11 @@ namespace App\Livewire\Settings;
 use App\Enums\ActivityLevel;
 use App\Enums\GoalIntensity;
 use App\Enums\GoalType;
+use App\Enums\ProteinMultiplier;
 use App\Models\UserProfile;
 use App\Services\Body\BodyMetricCalculator;
 use App\Services\Nutrition\MealPlannerService;
+use App\Services\Nutrition\ProteinTargetCalculator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -29,6 +31,8 @@ class NutritionProfile extends Component
     public string $goal_intensity = 'moderate';
 
     public ?int $daily_calorie_target = null;
+
+    public string $protein_multiplier = '1.7';
 
     public bool $override_calories = false;
 
@@ -57,6 +61,8 @@ class NutritionProfile extends Component
         $this->goal_intensity = $profile->goal_intensity?->value
             ?? $this->inferIntensityFromAdjustment($profile->goal_type, $profile->calorie_adjustment);
         $this->daily_calorie_target = $profile->daily_calorie_target;
+        $this->protein_multiplier = $profile->protein_multiplier?->value
+            ?? ProteinMultiplier::Maintenance->value;
         $this->target_weight_kg = $profile->target_weight_kg;
         $this->target_body_fat_percent = $profile->target_body_fat_percent;
 
@@ -65,7 +71,7 @@ class NutritionProfile extends Component
 
     public function updated($property): void
     {
-        if (in_array($property, ['activity_level', 'sport_kcal_per_day', 'goal_type'], true)) {
+        if (in_array($property, ['activity_level', 'sport_kcal_per_day', 'goal_type', 'protein_multiplier'], true)) {
             $this->recalculateMaintenance();
         }
 
@@ -119,6 +125,29 @@ class NutritionProfile extends Component
         );
 
         $this->floor_daily_kcal = $calculator->floorDailyKcal($profile->gender, $this->basal_metabolic_rate);
+    }
+
+    public function getProteinTargetGProperty(): ?int
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return null;
+        }
+
+        $multiplier = ProteinMultiplier::tryFrom($this->protein_multiplier)
+            ?? ProteinMultiplier::Maintenance;
+
+        return app(ProteinTargetCalculator::class)->dailyTargetG($user, $multiplier);
+    }
+
+    public function getLeanMassKgProperty(): ?float
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return null;
+        }
+
+        return app(ProteinTargetCalculator::class)->leanMassKg($user);
     }
 
     public function getEffectiveTargetProperty(): ?int
@@ -176,6 +205,7 @@ class NutritionProfile extends Component
             'calorie_adjustment' => 'required|integer|min:-1200|max:800',
             'sport_kcal_per_day' => 'required|integer|min:0|max:2000',
             'daily_calorie_target' => 'nullable|integer|min:800|max:6000',
+            'protein_multiplier' => ['required', Rule::in(array_column(ProteinMultiplier::cases(), 'value'))],
             'target_weight_kg' => [
                 'required', 'numeric', 'min:30', 'max:300',
                 Rule::when($this->goal_type === GoalType::WeightLoss->value && $latestWeight, 'lt:'.$latestWeight),
@@ -195,13 +225,18 @@ class NutritionProfile extends Component
             'sport_kcal_per_day' => $this->sport_kcal_per_day,
             'goal_intensity' => $this->goal_intensity,
             'daily_calorie_target' => $target,
+            'protein_multiplier' => $this->protein_multiplier,
             'target_weight_kg' => $this->target_weight_kg,
             'target_body_fat_percent' => $this->target_body_fat_percent,
         ]);
 
         app(MealPlannerService::class)->ensureDefaultPlan($user->fresh());
 
-        session()->flash('status', 'Paramètres nutrition mis à jour. Objectif : '.$target.' kcal/jour.');
+        $proteinLine = $this->proteinTargetG
+            ? ' · Protéines : '.$this->proteinTargetG.' g/j'
+            : '';
+
+        session()->flash('status', 'Paramètres nutrition mis à jour. Objectif : '.$target.' kcal/jour'.$proteinLine.'.');
     }
 
     private function inferIntensityFromAdjustment(GoalType $goal, int $adjustment): string
@@ -224,6 +259,7 @@ class NutritionProfile extends Component
             'goalOptions' => GoalType::cases(),
             'activityOptions' => ActivityLevel::cases(),
             'intensityOptions' => GoalIntensity::cases(),
+            'proteinMultiplierOptions' => ProteinMultiplier::cases(),
             'activityMultiplier' => $activity?->multiplier(),
             'activityLabel' => $activity?->label(),
             'intensityDisclaimer' => $intensity?->disclaimer(),

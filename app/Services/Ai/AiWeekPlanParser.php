@@ -2,6 +2,7 @@
 
 namespace App\Services\Ai;
 
+use App\Support\MacroEnergy;
 use App\Support\MealSlots;
 use Carbon\Carbon;
 use InvalidArgumentException;
@@ -10,7 +11,7 @@ class AiWeekPlanParser
 {
     /**
      * @param  list<string>  $expectedDates
-     * @return array{days: list<array{date: string, slots: array<string, list<array{label: string, quantity_g: ?float, recipe_id: ?int, recipe_hint: ?string}>}>}
+     * @return array{days: list<array{date: string, slots: array<string, list<array{label: string, quantity_g: ?float, recipe_id: ?int, recipe_hint: ?string, protein_g: ?float, carbs_g: ?float, fat_g: ?float, energy_kcal: ?float, price_eur: ?float}>}>}
      */
     public function parse(string $raw, array $expectedDates = []): array
     {
@@ -61,15 +62,12 @@ class AiWeekPlanParser
                 ));
             }
 
-            // Ignore unknown slot keys silently after validation of known ones
             $normalizedDays[] = [
                 'date' => $date,
                 'slots' => $slots,
             ];
         }
 
-        // Les dates hors plage demandée sont autorisées (l'IA peut en ajouter).
-        // On exige seulement que la plage demandée soit couverte.
         if ($expectedDates !== []) {
             $got = array_column($normalizedDays, 'date');
             $missing = array_diff($expectedDates, $got);
@@ -112,7 +110,7 @@ class AiWeekPlanParser
     }
 
     /**
-     * @return array{label: string, quantity_g: ?float, recipe_id: ?int, recipe_hint: ?string}
+     * @return array{label: string, quantity_g: ?float, recipe_id: ?int, recipe_hint: ?string, protein_g: ?float, carbs_g: ?float, fat_g: ?float, energy_kcal: ?float, price_eur: ?float}
      */
     private function normalizeItem(mixed $item, string $date, string $slot): array
     {
@@ -147,11 +145,51 @@ class AiWeekPlanParser
             $quantityG = max(1.0, min(5000.0, (float) $item['quantity_g']));
         }
 
+        $proteinG = $this->optionalFloat($item, ['protein_g', 'proteines_g', 'protein', 'protéines']);
+        $carbsG = $this->optionalFloat($item, ['carbs_g', 'glucides_g', 'carbs', 'glucides', 'carbohydrates_g']);
+        $fatG = $this->optionalFloat($item, ['fat_g', 'lipides_g', 'fat', 'lipides']);
+        $energyKcal = $this->optionalFloat($item, ['energy_kcal', 'kcal', 'calories', 'energie_kcal', 'énergie_kcal']);
+        $priceEur = $this->optionalFloat($item, ['price_eur', 'prix_eur', 'price', 'prix']);
+
+        if ($energyKcal === null && (($proteinG ?? 0) + ($carbsG ?? 0) + ($fatG ?? 0)) > 0) {
+            $energyKcal = round(MacroEnergy::kcalFromMacros(
+                (float) ($proteinG ?? 0),
+                (float) ($carbsG ?? 0),
+                (float) ($fatG ?? 0),
+            ), 1);
+        }
+
+        if ($priceEur !== null) {
+            $priceEur = max(0.0, min(500.0, $priceEur));
+        }
+
         return [
             'label' => $label,
             'quantity_g' => $quantityG,
             'recipe_id' => $recipeId,
             'recipe_hint' => $recipeHint,
+            'protein_g' => $proteinG,
+            'carbs_g' => $carbsG,
+            'fat_g' => $fatG,
+            'energy_kcal' => $energyKcal,
+            'price_eur' => $priceEur,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  list<string>  $keys
+     */
+    private function optionalFloat(array $item, array $keys): ?float
+    {
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $item) || $item[$key] === null || $item[$key] === '') {
+                continue;
+            }
+
+            return max(0.0, min(5000.0, (float) $item[$key]));
+        }
+
+        return null;
     }
 }

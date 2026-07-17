@@ -8,6 +8,12 @@ Règles :
 - Tu peux ajouter des jours supplémentaires hors plage si utile (ex. batch cooking le lendemain).
 - Utilise uniquement les clés de créneaux fournies.
 - Vise environ {{ $calorieTarget }} kcal/jour (objectif : {{ $goalLabel }}).
+@if ($proteinTargetG)
+- Cible protéines OBLIGATOIRE : environ {{ $proteinTargetG }} g/jour (multiplicateur {{ $proteinMultiplierLabel }} sur la masse maigre). Ne propose JAMAIS une journée autour de 50 g de protéines si la cible est plus élevée — répartis les protéines sur les repas.
+@endif
+- Pour CHAQUE item, renseigne les macros de la portion : protein_g, carbs_g, fat_g, et energy_kcal (si energy_kcal omis : P×4 + G×4 + L×9).
+- Pour CHAQUE item, renseigne aussi price_eur (coût estimé de la portion en euros, réaliste France).
+- Si un aliment/recette matche le catalogue FuturMeal, les macros/prix catalogue remplaceront les tiens ; sinon tes macros/prix serviront de secours.
 - Préfère les recettes du catalogue utilisateur quand c'est pertinent : renseigne "recipe_id" (id exact) et/ou "recipe_hint" (nom proche).
 - Sinon propose des aliments courants avec "label" clair (français) et "quantity_g" réaliste.
 - Les collations peuvent être des tableaux vides si non nécessaires.
@@ -28,7 +34,7 @@ Schéma attendu :
     {
       "date": "YYYY-MM-DD",
       "slots": {
-        "morning_snack": [{"label":"…","quantity_g":100,"recipe_id":null,"recipe_hint":null}],
+        "morning_snack": [{"label":"…","quantity_g":100,"recipe_id":null,"recipe_hint":null,"protein_g":20,"carbs_g":10,"fat_g":5,"energy_kcal":165,"price_eur":0.80}],
         "breakfast": [],
         "lunch": [],
         "afternoon_snack": [],

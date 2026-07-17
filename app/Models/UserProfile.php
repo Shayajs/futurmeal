@@ -7,6 +7,7 @@ use App\Enums\Gender;
 use App\Enums\GoalIntensity;
 use App\Enums\GoalType;
 use App\Enums\MealComplexity;
+use App\Enums\ProteinMultiplier;
 use App\Enums\WheyPreference;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,7 @@ class UserProfile extends Model
         'goal_type',
         'planning_horizon_days',
         'daily_calorie_target',
+        'protein_multiplier',
         'calorie_adjustment',
         'sport_kcal_per_day',
         'goal_intensity',
@@ -49,6 +51,7 @@ class UserProfile extends Model
             'goal_type' => GoalType::class,
             'planning_horizon_days' => 'integer',
             'daily_calorie_target' => 'integer',
+            'protein_multiplier' => ProteinMultiplier::class,
             'calorie_adjustment' => 'integer',
             'sport_kcal_per_day' => 'integer',
             'goal_intensity' => GoalIntensity::class,

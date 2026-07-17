@@ -64,6 +64,24 @@ class NutritionIntensityAndAiPrefsTest extends TestCase
         $this->assertSame(-750, $profile->calorie_adjustment);
     }
 
+    public function test_nutrition_settings_save_protein_multiplier(): void
+    {
+        $user = $this->onboardedUser();
+        BodyMetric::query()->where('user_id', $user->id)->update([
+            'body_fat_percent' => 15,
+            'lean_mass_kg' => 72.25,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(NutritionProfile::class)
+            ->set('protein_multiplier', '2.2')
+            ->assertSet('proteinTargetG', 159)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('2.2', $user->fresh()->profile->protein_multiplier->value);
+    }
+
     public function test_extreme_intensity_warns_but_does_not_clamp_target(): void
     {
         $user = $this->onboardedUser();

@@ -31,7 +31,7 @@ new class extends Component
     class="border-b border-fm-border bg-fm-bg sticky top-0 z-50"
     x-data="{ mobileOpen: false }"
     @keydown.escape.window="mobileOpen = false"
-    @livewire:navigating.window="mobileOpen = false"
+    x-on:livewire:navigating.window="mobileOpen = false"
     @click.outside="mobileOpen = false"
 >
     <div class="fm-container flex justify-between items-center h-nav gap-3">

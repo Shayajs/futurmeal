@@ -349,6 +349,42 @@ class DayEditorTest extends TestCase
         $this->assertSame(0.65, $entry->estimated_cost);
     }
 
+    public function test_user_can_edit_food_entry_after_adding(): void
+    {
+        $user = User::factory()->create();
+        $food = $this->createCiqualFood();
+        $date = today()->toDateString();
+
+        $component = Livewire::actingAs($user)
+            ->test(DayEditor::class, ['date' => $date])
+            ->call('openSlot', 'lunch')
+            ->set('quantityG', 200)
+            ->call('selectFoodForAdd', FoodReferenceType::Ciqual->value, $food->id, 'Crème fraîche 7%', null)
+            ->set('pricePerKg', 5.0)
+            ->call('addFood');
+
+        $entry = MealPlanEntry::whereDate('planned_on', $date)->first();
+        $this->assertSame(1.0, $entry->estimated_cost);
+
+        $component
+            ->call('openEntryEdit', $entry->id)
+            ->set('editQuantityG', 150)
+            ->set('editPricePerKg', 4.93)
+            ->set('editStoreBrand', 'Leclerc')
+            ->call('saveEntryEdit');
+
+        $entry->refresh();
+
+        $this->assertSame(150.0, $entry->quantity_g);
+        $this->assertSame(0.74, $entry->estimated_cost);
+        $this->assertDatabaseHas('budget_entries', [
+            'user_id' => $user->id,
+            'label' => 'Crème fraîche 7%',
+            'price_per_kg' => 4.93,
+            'store_brand' => 'Leclerc',
+        ]);
+    }
+
     public function test_select_food_prefills_community_median(): void
     {
         $user = User::factory()->create();

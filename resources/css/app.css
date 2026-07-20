@@ -96,7 +96,7 @@
         @apply fm-panel;
     }
     .fm-btn-primary {
-        @apply inline-flex items-center justify-center rounded-lg bg-fm-primary px-5 py-2.5 text-sm font-medium text-fm-bg transition duration-150 hover:bg-fm-primary-hover;
+        @apply inline-flex min-h-touch items-center justify-center rounded-lg bg-fm-primary px-5 py-2.5 text-sm font-medium text-fm-bg transition duration-150 hover:bg-fm-primary-hover;
     }
     .fm-btn-primary-lg {
         @apply fm-btn-primary px-6 py-3;
@@ -126,20 +126,20 @@
         @apply text-sm text-fm-muted underline-offset-4 hover:text-fm-text hover:underline;
     }
     .fm-input {
-        @apply w-full rounded-lg border border-fm-border bg-fm-bg text-fm-text px-3 py-2 text-sm focus:border-fm-primary focus:ring-1 focus:ring-fm-primary/30;
+        @apply w-full min-h-touch rounded-lg border border-fm-border bg-fm-bg text-fm-text px-3 py-2 text-base sm:text-sm focus:border-fm-primary focus:ring-1 focus:ring-fm-primary/30;
     }
     .fm-number {
         @apply relative inline-flex w-full;
     }
     .fm-number > input {
-        @apply w-full pr-9 tabular-nums;
+        @apply w-full pr-10 tabular-nums;
     }
     .fm-number-arrows {
-        @apply absolute inset-y-px right-px flex w-8 flex-col overflow-hidden rounded-r-lg;
+        @apply absolute inset-y-px right-px flex w-9 flex-col overflow-hidden rounded-r-lg;
     }
     .fm-number-arrows button {
         @apply flex min-h-[1.375rem] flex-1 items-center justify-center border-l border-fm-border bg-fm-surface text-fm-muted transition duration-150;
-        @apply hover:bg-fm-surface-elevated hover:text-fm-primary;
+        @apply hover:bg-fm-surface-elevated hover:text-fm-primary active:bg-fm-surface-elevated active:text-fm-primary;
     }
     .fm-number-arrows button + button {
         @apply border-t;

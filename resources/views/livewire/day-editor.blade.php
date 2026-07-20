@@ -20,9 +20,9 @@
                 @endif
             </p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <button wire:click="goToDay('{{ $day->copy()->subDay()->toDateString() }}')" type="button" class="fm-btn-sm">← Jour</button>
-            <button wire:click="goToDay('{{ $day->copy()->addDay()->toDateString() }}')" type="button" class="fm-btn-sm">Jour →</button>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button wire:click="goToDay('{{ $day->copy()->subDay()->toDateString() }}')" type="button" class="fm-btn-sm flex-1 sm:flex-none">← Jour</button>
+            <button wire:click="goToDay('{{ $day->copy()->addDay()->toDateString() }}')" type="button" class="fm-btn-sm flex-1 sm:flex-none">Jour →</button>
         </div>
     </div>
 
@@ -97,39 +97,88 @@
                 <div class="space-y-1">
                     @foreach ($slotEntries as $entry)
                         @php $nutrients = $entryCalculator->calculate($entry); @endphp
-                        <div class="text-sm bg-fm-surface rounded-lg p-2.5 flex flex-wrap items-center gap-x-3 gap-y-2" wire:key="entry-{{ $entry->id }}">
-                            <span class="min-w-0 flex-1 basis-[10rem]">
-                                <strong class="block truncate text-sm">{{ $entryCalculator->label($entry) }}</strong>
-                                <span class="text-xs text-fm-primary tabular-nums">{{ (int) $nutrients->energyKcal }} kcal</span>
-                                @if ($entry->estimated_cost)
-                                    <span class="text-xs text-fm-muted tabular-nums"> · {{ number_format($entry->estimated_cost, 2, ',', ' ') }} €</span>
+                        <div class="text-sm bg-fm-surface rounded-lg p-2.5 space-y-2" wire:key="entry-{{ $entry->id }}">
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                                <span class="min-w-0 flex-1 basis-[8rem]">
+                                    <strong class="block truncate text-sm">{{ $entryCalculator->label($entry) }}</strong>
+                                    <span class="text-xs text-fm-primary tabular-nums">{{ (int) $nutrients->energyKcal }} kcal</span>
+                                    @if ($entry->estimated_cost)
+                                        <span class="text-xs text-fm-muted tabular-nums"> · {{ number_format($entry->estimated_cost, 2, ',', ' ') }} €</span>
+                                    @endif
+                                </span>
+                                @if ($canEdit && $entry->quantity_g && $editingEntryId !== $entry->id)
+                                    <div class="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+                                        <label class="flex items-center gap-1 text-xs text-fm-muted flex-1 sm:flex-none">
+                                            <x-fm.number
+                                                wrap="w-full sm:w-20"
+                                                step="1" min="1" max="5000"
+                                                value="{{ $entry->quantity_g }}"
+                                                inputmode="decimal"
+                                                class="py-0.5 px-1 text-xs"
+                                                wire:change="updateQuantity({{ $entry->id }}, parseFloat($event.target.value))"
+                                            />
+                                            g
+                                        </label>
+                                        <button
+                                            type="button"
+                                            wire:click="openEntryEdit({{ $entry->id }})"
+                                            class="inline-flex min-h-touch items-center px-3 text-xs text-fm-muted hover:text-fm-primary transition-colors rounded-lg hover:bg-fm-bg"
+                                        >
+                                            Modifier
+                                        </button>
+                                        <button wire:click="removeEntry({{ $entry->id }})" type="button" class="inline-flex min-h-touch min-w-touch items-center justify-center text-fm-accent shrink-0 rounded-lg hover:bg-fm-accent/10" aria-label="Supprimer">×</button>
+                                    </div>
+                                @elseif ($canEdit && $entry->recipe_id && ! $entry->quantity_g)
+                                    <div class="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+                                        <label class="flex items-center gap-1 text-xs text-fm-muted flex-1 sm:flex-none">
+                                            ×
+                                            <x-fm.number
+                                                wrap="w-full sm:w-[4.5rem]"
+                                                step="0.25" min="0.25" max="10"
+                                                value="{{ $entry->portions ?? 1 }}"
+                                                inputmode="decimal"
+                                                class="py-0.5 px-1 text-xs"
+                                                wire:change="updatePortions({{ $entry->id }}, parseFloat($event.target.value))"
+                                            />
+                                        </label>
+                                        <button wire:click="removeEntry({{ $entry->id }})" type="button" class="inline-flex min-h-touch min-w-touch items-center justify-center text-fm-accent shrink-0 rounded-lg hover:bg-fm-accent/10" aria-label="Supprimer">×</button>
+                                    </div>
+                                @elseif ($canEdit)
+                                    <button wire:click="removeEntry({{ $entry->id }})" type="button" class="inline-flex min-h-touch min-w-touch items-center justify-center text-fm-accent shrink-0 rounded-lg hover:bg-fm-accent/10 sm:ml-auto" aria-label="Supprimer">×</button>
                                 @endif
-                            </span>
-                            @if ($canEdit && $entry->quantity_g)
-                                <label class="flex items-center gap-1 text-xs text-fm-muted shrink-0">
-                                    <x-fm.number
-                                        wrap="w-20"
-                                        step="1" min="1" max="5000"
-                                        value="{{ $entry->quantity_g }}"
-                                        class="py-0.5 px-1 text-xs"
-                                        wire:change="updateQuantity({{ $entry->id }}, parseFloat($event.target.value))"
-                                    />
-                                    g
-                                </label>
-                            @elseif ($canEdit && $entry->recipe_id && ! $entry->quantity_g)
-                                <label class="flex items-center gap-1 text-xs text-fm-muted shrink-0">
-                                    ×
-                                    <x-fm.number
-                                        wrap="w-[4.5rem]"
-                                        step="0.25" min="0.25" max="10"
-                                        value="{{ $entry->portions ?? 1 }}"
-                                        class="py-0.5 px-1 text-xs"
-                                        wire:change="updatePortions({{ $entry->id }}, parseFloat($event.target.value))"
-                                    />
-                                </label>
-                            @endif
-                            @if ($canEdit)
-                                <button wire:click="removeEntry({{ $entry->id }})" type="button" class="inline-flex min-h-touch min-w-touch items-center justify-center text-fm-accent shrink-0 rounded-lg hover:bg-fm-accent/10" aria-label="Supprimer">×</button>
+                            </div>
+
+                            @if ($canEdit && $entry->quantity_g && $editingEntryId === $entry->id)
+                                <div class="rounded-lg border border-fm-primary/40 bg-fm-bg p-3 space-y-3">
+                                    <div class="grid grid-cols-1 xs:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="text-caption text-fm-muted">Quantité</label>
+                                            <div class="flex items-center gap-1 mt-1">
+                                                <x-fm.number wrap="w-full" wire:model="editQuantityG" min="1" max="5000" step="5" inputmode="decimal" class="text-sm" />
+                                                <span class="text-sm text-fm-muted shrink-0">g</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="text-caption text-fm-muted">Prix</label>
+                                            <div class="flex items-center gap-1 mt-1">
+                                                <x-fm.number wrap="w-full" wire:model="editPricePerKg" min="0" max="999" step="0.01" inputmode="decimal" class="text-sm" placeholder="Prix" />
+                                                <span class="text-sm text-fm-muted whitespace-nowrap shrink-0">€/kg</span>
+                                            </div>
+                                        </div>
+                                        <div class="xs:col-span-2">
+                                            <label class="text-caption text-fm-muted">Enseigne</label>
+                                            <input wire:model="editStoreBrand" list="store-brands-list" class="fm-input text-sm mt-1" placeholder="Ex. Carrefour" autocomplete="organization">
+                                        </div>
+                                    </div>
+                                    <label class="flex items-center gap-2 text-sm min-h-touch">
+                                        <input type="checkbox" wire:model="editSharePriceWithCommunity">
+                                        Partager ce prix avec la communauté
+                                    </label>
+                                    <div class="flex flex-col-reverse xs:flex-row gap-2">
+                                        <button type="button" wire:click="cancelEntryEdit" class="fm-btn-ghost text-sm w-full xs:w-auto">Annuler</button>
+                                        <button type="button" wire:click="saveEntryEdit" class="fm-btn-primary text-sm w-full xs:w-auto">Enregistrer</button>
+                                    </div>
+                                </div>
                             @endif
                         </div>
                     @endforeach
@@ -141,28 +190,30 @@
 
                 @if ($canEdit)
                     @if ($activeSlot === $slotKey)
-                        <div class="mt-3 p-3 rounded-lg border border-fm-primary/40 bg-fm-bg space-y-2">
-                            <div class="flex flex-wrap gap-2">
+                        <div class="mt-3 p-3 rounded-lg border border-fm-primary/40 bg-fm-bg space-y-3">
+                            <div class="space-y-2">
                                 <input
                                     wire:model.live.debounce.300ms="foodSearch"
                                     type="search"
                                     placeholder="Chercher un aliment, code-barres…"
-                                    class="fm-input text-sm flex-1 min-w-[10rem]"
+                                    class="fm-input text-sm w-full"
                                     autofocus
                                 >
-                                <div class="flex items-center gap-1">
-                                    <x-fm.number wrap="w-24" wire:model="quantityG" min="1" max="5000" step="5" class="text-sm" title="Grammes" />
-                                    <span class="text-sm text-fm-muted">g</span>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <x-fm.number wrap="w-24" wire:model="pricePerKg" min="0" max="999" step="0.01" class="text-sm" placeholder="Prix" title="Prix €/kg (facultatif)" />
-                                    <span class="text-sm text-fm-muted whitespace-nowrap">€/kg</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="flex items-center gap-1">
+                                        <x-fm.number wrap="w-full" wire:model="quantityG" min="1" max="5000" step="5" inputmode="decimal" class="text-sm" title="Grammes" />
+                                        <span class="text-sm text-fm-muted shrink-0">g</span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <x-fm.number wrap="w-full" wire:model="pricePerKg" min="0" max="999" step="0.01" inputmode="decimal" class="text-sm" placeholder="Prix" title="Prix €/kg (facultatif)" />
+                                        <span class="text-sm text-fm-muted whitespace-nowrap shrink-0">€/kg</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="flex flex-wrap gap-2 items-end">
-                                <div class="flex-1 min-w-[10rem]">
+                            <div class="grid grid-cols-1 xs:grid-cols-2 gap-2 items-end">
+                                <div class="min-w-0">
                                     <label class="text-caption text-fm-muted">Enseigne</label>
-                                    <input wire:model.live="storeBrand" list="store-brands-list" class="fm-input text-sm mt-1" placeholder="Ex. Carrefour">
+                                    <input wire:model.live="storeBrand" list="store-brands-list" class="fm-input text-sm mt-1" placeholder="Ex. Carrefour" autocomplete="organization">
                                     <datalist id="store-brands-list">
                                         @foreach ($storeBrands as $brand)
                                             <option value="{{ $brand }}"></option>
@@ -174,7 +225,7 @@
                                     <input type="date" wire:model="priceObservedAt" max="{{ today()->toDateString() }}" class="fm-input text-sm mt-1">
                                 </div>
                             </div>
-                            <label class="flex items-center gap-2 text-sm">
+                            <label class="flex items-center gap-2 text-sm min-h-touch">
                                 <input type="checkbox" wire:model="sharePriceWithCommunity">
                                 Partager ce prix avec la communauté
                             </label>
@@ -189,10 +240,12 @@
                                 <a href="{{ route('settings.budget') }}" wire:navigate class="text-fm-primary hover:underline">Magasin par défaut</a>
                             </p>
                             @if ($selectedFoodLabel)
-                                <div class="flex flex-wrap items-center gap-2 rounded-lg border border-fm-border bg-fm-surface px-3 py-2">
+                                <div class="flex flex-col xs:flex-row xs:flex-wrap items-stretch xs:items-center gap-2 rounded-lg border border-fm-border bg-fm-surface px-3 py-2">
                                     <span class="text-sm flex-1 min-w-0 truncate">{{ $selectedFoodLabel }}</span>
-                                    <button type="button" wire:click="addFood" class="fm-btn-primary text-sm">Ajouter</button>
-                                    <button type="button" wire:click="clearSelectedFood" class="fm-btn-ghost text-sm">Annuler</button>
+                                    <div class="flex gap-2">
+                                        <button type="button" wire:click="addFood" class="fm-btn-primary text-sm flex-1 xs:flex-none">Ajouter</button>
+                                        <button type="button" wire:click="clearSelectedFood" class="fm-btn-ghost text-sm flex-1 xs:flex-none">Annuler</button>
+                                    </div>
                                 </div>
                             @endif
                             @if (count($foodSearchResults))
@@ -256,17 +309,17 @@
                             <button type="button" wire:click="closeSlot" class="text-xs text-fm-muted hover:text-fm-text">Fermer</button>
                         </div>
                     @else
-                        <div class="flex flex-wrap gap-2 mt-3">
+                        <div class="flex flex-col xs:flex-row flex-wrap gap-2 mt-3">
                             <button
                                 type="button"
                                 wire:click="openSlot('{{ $slotKey }}')"
-                                class="text-sm px-4 py-2 rounded-lg border border-fm-border hover:border-fm-primary transition-colors min-h-touch"
+                                class="text-sm px-4 py-2 rounded-lg border border-fm-border hover:border-fm-primary transition-colors min-h-touch w-full xs:w-auto"
                             >
                                 + Aliment
                             </button>
                             @if ($recipes->isNotEmpty())
                                 <select
-                                    class="fm-input text-xs max-w-[10rem] py-1"
+                                    class="fm-input text-sm w-full xs:max-w-[12rem]"
                                     onchange="if(this.value){ $wire.addRecipeBundle('{{ $slotKey }}', parseInt(this.value)); this.value=''; }"
                                 >
                                     <option value="">+ Ensemble</option>

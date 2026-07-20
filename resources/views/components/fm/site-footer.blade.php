@@ -40,7 +40,7 @@
             <div class="mt-3" data-pwa-install hidden>
                 <button
                     type="button"
-                    class="text-caption text-fm-muted/70 hover:text-fm-primary transition-colors"
+                    class="inline-flex min-h-touch items-center text-caption text-fm-muted/70 hover:text-fm-primary transition-colors"
                 >
                     Installer l'application sur cet appareil
                 </button>

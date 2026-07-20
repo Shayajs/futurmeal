@@ -227,6 +227,57 @@ class BudgetService
         return $price !== null ? (float) $price : null;
     }
 
+    public function matchingBudgetEntry(
+        User $user,
+        ?string $referenceType,
+        ?int $referenceId,
+        ?string $label,
+        ?int $foodItemId = null,
+    ): ?BudgetEntry {
+        $buildQuery = function (?string $brandFilter) use ($user, $referenceType, $referenceId, $label, $foodItemId) {
+            $query = BudgetEntry::where('user_id', $user->id);
+
+            if ($brandFilter === '__any__') {
+                // no store_brand filter
+            } elseif ($brandFilter !== null) {
+                $query->where('store_brand', $brandFilter);
+            } else {
+                $query->whereNull('store_brand');
+            }
+
+            if ($foodItemId) {
+                $query->where('food_item_id', $foodItemId);
+            } elseif ($referenceType && $referenceId) {
+                $query->where('reference_type', $referenceType)->where('reference_id', $referenceId);
+            } elseif ($label) {
+                $query->where('label', $label);
+            } else {
+                return null;
+            }
+
+            if ($brandFilter === '__any__') {
+                return $query->orderByDesc('updated_at')->first();
+            }
+
+            return $query->first();
+        };
+
+        $preferredBrand = $this->preferredStoreBrand($user);
+        if ($preferredBrand !== null && trim($preferredBrand) !== '') {
+            $entry = $buildQuery(trim($preferredBrand));
+            if ($entry !== null) {
+                return $entry;
+            }
+        }
+
+        $entry = $buildQuery(null);
+        if ($entry !== null) {
+            return $entry;
+        }
+
+        return $buildQuery('__any__');
+    }
+
     public function preferredStoreBrand(User $user): ?string
     {
         $label = $user->profile?->open_prices_location_label;

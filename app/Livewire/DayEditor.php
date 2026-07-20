@@ -98,6 +98,16 @@ class DayEditor extends Component
 
     public bool $publishPublic = true;
 
+    public ?int $editingEntryId = null;
+
+    public float $editQuantityG = 100;
+
+    public ?float $editPricePerKg = null;
+
+    public string $editStoreBrand = '';
+
+    public bool $editSharePriceWithCommunity = true;
+
     public function mount(
         string $date,
         ProgramPlanService $programPlan,
@@ -134,6 +144,7 @@ class DayEditor extends Component
         }
 
         $this->activeSlot = $slot;
+        $this->cancelEntryEdit();
         $this->foodSearch = '';
         $this->foodSearchResults = [];
         $this->quantityG = 100;
@@ -416,10 +427,112 @@ class DayEditor extends Component
         $budget->syncEntryCost(Auth::user(), $entry->fresh());
     }
 
+    public function openEntryEdit(int $entryId, BudgetService $budget): void
+    {
+        if (! $this->canEdit) {
+            return;
+        }
+
+        $entry = MealPlanEntry::query()
+            ->where('meal_plan_id', $this->mealPlanId)
+            ->with('foodItem')
+            ->findOrFail($entryId);
+
+        if ($entry->quantity_g === null) {
+            return;
+        }
+
+        $this->closeSlot();
+        $this->editingEntryId = $entry->id;
+        $this->editQuantityG = (float) $entry->quantity_g;
+
+        $budgetEntry = $budget->matchingBudgetEntry(
+            Auth::user(),
+            $entry->reference_type?->value,
+            $entry->reference_id,
+            $entry->label,
+            $entry->food_item_id,
+        );
+
+        $this->editStoreBrand = $budgetEntry?->store_brand
+            ?? $budget->preferredStoreBrand(Auth::user())
+            ?? '';
+
+        $resolution = $budget->resolvePrice(
+            Auth::user(),
+            $entry->reference_type?->value,
+            $entry->reference_id,
+            $entry->label ?? '',
+            $entry->foodItem?->external_id,
+            Auth::user()->profile?->open_prices_location_id,
+            trim($this->editStoreBrand) !== '' ? trim($this->editStoreBrand) : null,
+        );
+
+        $this->editPricePerKg = $resolution?->pricePerKg;
+        $this->editSharePriceWithCommunity = true;
+    }
+
+    public function cancelEntryEdit(): void
+    {
+        $this->editingEntryId = null;
+        $this->editQuantityG = 100;
+        $this->editPricePerKg = null;
+        $this->editStoreBrand = '';
+        $this->editSharePriceWithCommunity = true;
+    }
+
+    public function saveEntryEdit(BudgetService $budget): void
+    {
+        if (! $this->canEdit || ! $this->editingEntryId) {
+            return;
+        }
+
+        $entry = MealPlanEntry::query()
+            ->where('meal_plan_id', $this->mealPlanId)
+            ->with('foodItem')
+            ->findOrFail($this->editingEntryId);
+
+        if ($entry->quantity_g === null) {
+            $this->cancelEntryEdit();
+
+            return;
+        }
+
+        $quantityG = max(1, min(5000, round($this->editQuantityG, 1)));
+        $price = $this->editPricePerKg !== null && $this->editPricePerKg > 0
+            ? round($this->editPricePerKg, 2)
+            : null;
+        $brand = trim($this->editStoreBrand) !== '' ? trim($this->editStoreBrand) : null;
+
+        if ($price !== null) {
+            $budget->upsert(
+                Auth::user(),
+                $entry->label ?? '',
+                $price,
+                $entry->reference_type?->value,
+                $entry->reference_id,
+                $entry->food_item_id,
+                PriceSource::User,
+                $brand,
+                $this->editSharePriceWithCommunity && $brand !== null,
+                Auth::user()->profile?->open_prices_location_id,
+                today(),
+            );
+        }
+
+        $entry->update(['quantity_g' => $quantityG]);
+        $budget->syncEntryCost(Auth::user(), $entry->fresh());
+        $this->cancelEntryEdit();
+    }
+
     public function removeEntry(int $entryId): void
     {
         if (! $this->canEdit) {
             return;
+        }
+
+        if ($this->editingEntryId === $entryId) {
+            $this->cancelEntryEdit();
         }
 
         MealPlanEntry::where('meal_plan_id', $this->mealPlanId)->where('id', $entryId)->delete();

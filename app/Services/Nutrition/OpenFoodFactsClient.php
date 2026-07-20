@@ -2,19 +2,19 @@
 
 namespace App\Services\Nutrition;
 
-use App\Data\NutrientProfile;
 use App\Enums\FoodReferenceType;
-use App\Models\CiqualFood;
 use App\Models\FoodItem;
-use App\Models\Recipe;
-use App\Models\RecipeIngredient;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 
 class OpenFoodFactsClient
 {
     private const BASE_URL = 'https://world.openfoodfacts.org';
+
+    private const PRODUCT_FIELDS = 'product_name,product_name_fr,product_name_en,brands,nutriments,image_url';
+
+    private const SEARCH_FIELDS = 'code,product_name,product_name_fr,product_name_en,brands,nutriments';
 
     public function fetchByBarcode(string $barcode): ?FoodItem
     {
@@ -23,41 +23,25 @@ class OpenFoodFactsClient
             ->where('external_id', $barcode)
             ->first();
 
-        if ($cached) {
+        if ($cached && ! $this->needsFrenchNameRefresh($cached->name)) {
             return $cached;
         }
 
-        $response = Http::withHeaders([
-            'User-Agent' => config('futurmeal.off_user_agent'),
-        ])->get(self::BASE_URL."/api/v3/product/{$barcode}", [
-            'fields' => 'product_name,brands,nutriments,image_url',
+        $response = Http::withHeaders($this->headers())->get(self::BASE_URL."/api/v3/product/{$barcode}", [
+            'fields' => self::PRODUCT_FIELDS,
         ]);
 
         if (! $response->successful()) {
-            return null;
+            return $cached;
         }
 
         $product = data_get($response->json(), 'product');
 
         if (! $product) {
-            return null;
+            return $cached;
         }
 
-        $nutriments = $product['nutriments'] ?? [];
-
-        return FoodItem::create([
-            'reference_type' => FoodReferenceType::OpenFoodFacts,
-            'external_id' => $barcode,
-            'name' => $product['product_name'] ?? 'Produit inconnu',
-            'brand' => $product['brands'] ?? null,
-            'energy_kcal' => (float) ($nutriments['energy-kcal_100g'] ?? ($nutriments['energy_100g'] ?? 0) / 4.184),
-            'protein_g' => (float) ($nutriments['proteins_100g'] ?? 0),
-            'carbs_g' => (float) ($nutriments['carbohydrates_100g'] ?? 0),
-            'fat_g' => (float) ($nutriments['fat_100g'] ?? 0),
-            'fiber_g' => (float) ($nutriments['fiber_100g'] ?? 0),
-            'salt_g' => (float) ($nutriments['salt_100g'] ?? 0),
-            'raw_nutriments' => $nutriments,
-        ]);
+        return $this->upsertFromProduct($barcode, $product);
     }
 
     /**
@@ -77,15 +61,16 @@ class OpenFoodFactsClient
 
         RateLimiter::hit($rateKey, 60);
 
-        $cacheKey = 'off_search_'.md5(mb_strtolower($query)).'_'.$limit;
+        $cacheKey = 'off_search_fr_v2_'.md5(mb_strtolower($query)).'_'.$limit;
 
         return Cache::remember($cacheKey, config('futurmeal.off_search_cache_ttl'), function () use ($query, $limit) {
-            $response = Http::withHeaders([
-                'User-Agent' => config('futurmeal.off_user_agent'),
-            ])->get(self::BASE_URL.'/api/v2/search', [
+            $response = Http::withHeaders($this->headers())->get(self::BASE_URL.'/api/v2/search', [
                 'search_terms' => $query,
-                'fields' => 'code,product_name,brands,nutriments',
+                'fields' => self::SEARCH_FIELDS,
                 'page_size' => $limit,
+                'countries_tags_en' => 'france',
+                'lc' => 'fr',
+                'cc' => 'fr',
             ]);
 
             if (! $response->successful()) {
@@ -94,11 +79,27 @@ class OpenFoodFactsClient
 
             $products = data_get($response->json(), 'products', []);
 
+            // Si trop peu de résultats FR, élargir sans filtre pays.
+            if (count($products) < max(3, (int) ceil($limit / 2))) {
+                $fallback = Http::withHeaders($this->headers())->get(self::BASE_URL.'/api/v2/search', [
+                    'search_terms' => $query,
+                    'fields' => self::SEARCH_FIELDS,
+                    'page_size' => $limit,
+                    'lc' => 'fr',
+                    'cc' => 'fr',
+                ]);
+
+                if ($fallback->successful()) {
+                    $products = data_get($fallback->json(), 'products', $products);
+                }
+            }
+
             return collect($products)
                 ->filter(fn ($product) => ! empty($product['code']))
+                ->unique('code')
                 ->take($limit)
                 ->map(function (array $product) {
-                    $item = $this->upsertFromSearchResult($product);
+                    $item = $this->upsertFromProduct((string) $product['code'], $product);
 
                     return [
                         'type' => FoodReferenceType::OpenFoodFacts->value,
@@ -112,9 +113,11 @@ class OpenFoodFactsClient
         });
     }
 
-    private function upsertFromSearchResult(array $product): FoodItem
+    /**
+     * @param  array<string, mixed>  $product
+     */
+    private function upsertFromProduct(string $barcode, array $product): FoodItem
     {
-        $barcode = (string) $product['code'];
         $nutriments = $product['nutriments'] ?? [];
 
         return FoodItem::updateOrCreate(
@@ -123,7 +126,7 @@ class OpenFoodFactsClient
                 'external_id' => $barcode,
             ],
             [
-                'name' => $product['product_name'] ?? 'Produit inconnu',
+                'name' => $this->resolveLocalizedName($product),
                 'brand' => $product['brands'] ?? null,
                 'energy_kcal' => (float) ($nutriments['energy-kcal_100g'] ?? ($nutriments['energy_100g'] ?? 0) / 4.184),
                 'protein_g' => (float) ($nutriments['proteins_100g'] ?? 0),
@@ -134,5 +137,76 @@ class OpenFoodFactsClient
                 'raw_nutriments' => $nutriments,
             ]
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $product
+     */
+    private function resolveLocalizedName(array $product): string
+    {
+        $candidates = [
+            $product['product_name_fr'] ?? null,
+            $product['product_name'] ?? null,
+            $product['product_name_en'] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            $name = trim((string) $candidate);
+            if ($name === '') {
+                continue;
+            }
+
+            if ($this->looksNonLatinDominant($name)) {
+                continue;
+            }
+
+            return $name;
+        }
+
+        foreach ($candidates as $candidate) {
+            $name = trim((string) $candidate);
+            if ($name !== '') {
+                return $name;
+            }
+        }
+
+        return 'Produit inconnu';
+    }
+
+    private function needsFrenchNameRefresh(?string $name): bool
+    {
+        $name = trim((string) $name);
+
+        return $name === '' || $name === 'Produit inconnu' || $this->looksNonLatinDominant($name);
+    }
+
+    /**
+     * Détecte un nom majoritairement en écriture non latine (arabe, etc.).
+     */
+    private function looksNonLatinDominant(string $name): bool
+    {
+        if (preg_match('/\p{Arabic}/u', $name)) {
+            return true;
+        }
+
+        $letters = preg_replace('/[^\p{L}]/u', '', $name) ?? '';
+        if ($letters === '') {
+            return false;
+        }
+
+        $latin = preg_replace('/[^\p{Latin}]/u', '', $letters) ?? '';
+
+        return mb_strlen($latin) < (mb_strlen($letters) / 2);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function headers(): array
+    {
+        return [
+            'User-Agent' => config('futurmeal.off_user_agent'),
+            'Accept-Language' => 'fr-FR,fr;q=0.9,en;q=0.5',
+        ];
     }
 }

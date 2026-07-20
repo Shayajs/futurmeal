@@ -23,10 +23,15 @@ Document de référence pour l'intégration des sources de données externes.
 ### Endpoints clés
 
 ```
-GET /api/v3/product/{barcode}?fields=product_name,nutriments,brands,image_url
-GET /api/v2/search?code=3017620422003&fields=code,product_name,nutriments
+GET /api/v3/product/{barcode}?fields=product_name,product_name_fr,product_name_en,nutriments,brands,image_url
+GET /api/v2/search?search_terms=…&fields=code,product_name,product_name_fr,product_name_en,nutriments&countries_tags_en=france&lc=fr&cc=fr
 GET /api/v2/search?categories_tags=en:beverages&page_size=20
 ```
+
+### Langue des noms
+
+FuturMeal préfère `product_name_fr`, ignore les noms majoritairement arabes / non latins, puis retombe sur `product_name` / `product_name_en`.
+Les recherches biaient d’abord les produits taggés France (`countries_tags_en=france`).
 
 ### Données utiles
 

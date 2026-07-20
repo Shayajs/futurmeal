@@ -25,7 +25,7 @@
             <main class="flex-1 py-4 sm:py-6 lg:py-10">
                 {{ $slot }}
             </main>
-            <x-fm.site-footer />
+            <x-fm.site-footer show-pwa-install />
         </div>
         @livewireScripts
     </body>

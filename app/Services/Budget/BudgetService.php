@@ -182,11 +182,13 @@ class BudgetService
         ?int $foodItemId = null,
         ?string $storeBrand = null,
     ): ?float {
-        $buildQuery = function (?string $brand) use ($user, $referenceType, $referenceId, $label, $foodItemId) {
+        $buildQuery = function (?string $brandFilter) use ($user, $referenceType, $referenceId, $label, $foodItemId) {
             $query = BudgetEntry::where('user_id', $user->id);
 
-            if ($brand !== null) {
-                $query->where('store_brand', $brand);
+            if ($brandFilter === '__any__') {
+                // no store_brand filter
+            } elseif ($brandFilter !== null) {
+                $query->where('store_brand', $brandFilter);
             } else {
                 $query->whereNull('store_brand');
             }
@@ -201,6 +203,10 @@ class BudgetService
                 return null;
             }
 
+            if ($brandFilter === '__any__') {
+                return $query->orderByDesc('updated_at')->value('price_per_kg');
+            }
+
             return $query->value('price_per_kg');
         };
 
@@ -212,6 +218,11 @@ class BudgetService
         }
 
         $price = $buildQuery(null);
+        if ($price !== null) {
+            return (float) $price;
+        }
+
+        $price = $buildQuery('__any__');
 
         return $price !== null ? (float) $price : null;
     }
@@ -255,6 +266,7 @@ class BudgetService
             $ingredient->reference_id,
             $ingredient->label,
             $ingredient->food_item_id,
+            $this->preferredStoreBrand($user),
         );
     }
 
@@ -303,6 +315,7 @@ class BudgetService
             $entry->reference_id,
             $entry->label,
             $entry->food_item_id,
+            $this->preferredStoreBrand($user),
         );
 
         if ($pricePerKg === null) {

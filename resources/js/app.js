@@ -4,6 +4,7 @@ import Chart from 'chart.js/auto';
 window.Chart = Chart;
 
 registerServiceWorker();
+initPwaInstallPrompt();
 
 document.addEventListener('livewire:navigated', () => {
     document.querySelectorAll('[data-chart]').forEach(initChart);
@@ -11,6 +12,7 @@ document.addEventListener('livewire:navigated', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-chart]').forEach(initChart);
+    initPwaInstallPrompt();
 });
 
 // Livewire dispatche cet événement quand les données d'un graphique changent
@@ -93,4 +95,49 @@ function registerServiceWorker() {
             .register('/sw.js', { scope: '/' })
             .catch(() => {});
     });
+}
+
+function initPwaInstallPrompt() {
+    const container = document.querySelector('[data-pwa-install]');
+
+    if (!container || container.dataset.pwaReady === '1') {
+        return;
+    }
+
+    if (isPwaInstalled()) {
+        return;
+    }
+
+    container.dataset.pwaReady = '1';
+
+    let deferredPrompt = null;
+    const button = container.querySelector('button');
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+        container.hidden = false;
+    });
+
+    button?.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+            return;
+        }
+
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        container.hidden = true;
+    });
+
+    window.addEventListener('appinstalled', () => {
+        container.hidden = true;
+    });
+}
+
+function isPwaInstalled() {
+    return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true
+    );
 }

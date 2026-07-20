@@ -1,3 +1,5 @@
+@props(['showPwaInstall' => false])
+
 <footer {{ $attributes->merge(['class' => 'fm-divider py-8 mt-auto']) }}>
     <div class="fm-container flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div class="space-y-3">
@@ -33,5 +35,16 @@
         <p class="text-caption text-fm-muted">
             Composition nutritionnelle · Table CIQUAL © ANSES
         </p>
+
+        @if ($showPwaInstall)
+            <div class="mt-3" data-pwa-install hidden>
+                <button
+                    type="button"
+                    class="text-caption text-fm-muted/70 hover:text-fm-primary transition-colors"
+                >
+                    Installer l'application sur cet appareil
+                </button>
+            </div>
+        @endif
     </div>
 </footer>

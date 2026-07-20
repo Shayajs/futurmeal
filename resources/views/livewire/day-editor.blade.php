@@ -155,7 +155,7 @@
                                     <span class="text-sm text-fm-muted">g</span>
                                 </div>
                                 <div class="flex items-center gap-1">
-                                    <x-fm.number wrap="w-24" wire:model="pricePerKg" min="0" max="999" step="0.5" class="text-sm" placeholder="Prix" title="Prix €/kg (facultatif)" />
+                                    <x-fm.number wrap="w-24" wire:model="pricePerKg" min="0" max="999" step="0.01" class="text-sm" placeholder="Prix" title="Prix €/kg (facultatif)" />
                                     <span class="text-sm text-fm-muted whitespace-nowrap">€/kg</span>
                                 </div>
                             </div>

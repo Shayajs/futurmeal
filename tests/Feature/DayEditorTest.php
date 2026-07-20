@@ -90,6 +90,31 @@ class DayEditorTest extends TestCase
         ]);
     }
 
+    public function test_cent_precision_price_is_saved_and_applied_to_entry_cost(): void
+    {
+        $user = User::factory()->create();
+        $food = $this->createCiqualFood();
+        $date = today()->toDateString();
+
+        Livewire::actingAs($user)
+            ->test(DayEditor::class, ['date' => $date])
+            ->call('openSlot', 'lunch')
+            ->set('quantityG', 200)
+            ->call('selectFoodForAdd', FoodReferenceType::Ciqual->value, $food->id, 'Crème fraîche 7%', null)
+            ->set('pricePerKg', 4.93)
+            ->call('addFood');
+
+        $entry = MealPlanEntry::whereDate('planned_on', $date)->first();
+
+        $this->assertNotNull($entry);
+        $this->assertSame(0.99, $entry->estimated_cost);
+        $this->assertDatabaseHas('budget_entries', [
+            'user_id' => $user->id,
+            'label' => 'Crème fraîche 7%',
+            'price_per_kg' => 4.93,
+        ]);
+    }
+
     public function test_select_food_prefills_saved_user_price(): void
     {
         $user = User::factory()->create();
@@ -318,6 +343,10 @@ class DayEditorTest extends TestCase
             'store_brand' => 'Carrefour',
             'price_per_kg' => 6.5,
         ]);
+
+        $entry = MealPlanEntry::whereDate('planned_on', $date)->first();
+        $this->assertNotNull($entry);
+        $this->assertSame(0.65, $entry->estimated_cost);
     }
 
     public function test_select_food_prefills_community_median(): void

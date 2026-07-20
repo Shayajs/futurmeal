@@ -104,7 +104,7 @@
         <h2 class="text-sm font-medium">Ajouter un prix manuel</h2>
         <input wire:model="label" placeholder="Ingrédient (ex: Poulet blanc)" class="fm-input">
         @error('label') <p class="text-xs text-red-400">{{ $message }}</p> @enderror
-        <x-fm.number step="0.1" min="0" wire:model="price_per_kg" placeholder="Prix €/kg" />
+        <x-fm.number step="0.01" min="0" wire:model="price_per_kg" placeholder="Prix €/kg" />
         @error('price_per_kg') <p class="text-xs text-red-400">{{ $message }}</p> @enderror
         <button type="submit" class="fm-btn-primary">Enregistrer</button>
     </form>

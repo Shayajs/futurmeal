@@ -3,6 +3,8 @@ import Chart from 'chart.js/auto';
 
 window.Chart = Chart;
 
+registerServiceWorker();
+
 document.addEventListener('livewire:navigated', () => {
     document.querySelectorAll('[data-chart]').forEach(initChart);
 });
@@ -78,5 +80,17 @@ function initChart(canvas) {
         type: isMixed ? 'bar' : type,
         data: { labels, datasets },
         options,
+    });
+}
+
+function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) {
+        return;
+    }
+
+    window.addEventListener('load', () => {
+        navigator.serviceWorker
+            .register('/sw.js', { scope: '/' })
+            .catch(() => {});
     });
 }

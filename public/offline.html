@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0B0F19">
+    <title>Hors ligne — FuturMeal</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            font-family: "Outfit", system-ui, sans-serif;
+            background: #0B0F19;
+            color: #C8D0DC;
+        }
+        .card {
+            max-width: 24rem;
+            width: 100%;
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid #1E2A3D;
+            background: #12182A;
+            text-align: center;
+        }
+        h1 {
+            margin: 0 0 0.75rem;
+            font-size: 1.25rem;
+            color: #FFFFFF;
+        }
+        p {
+            margin: 0 0 1.5rem;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+        button {
+            border: 0;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: #00FF88;
+            color: #0B0F19;
+        }
+        button:hover {
+            background: #00E67A;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Vous êtes hors ligne</h1>
+        <p>Reconnectez-vous à Internet pour accéder à votre tableau de bord et à vos données.</p>
+        <button type="button" onclick="window.location.reload()">Réessayer</button>
+    </div>
+</body>
+</html>

@@ -27,7 +27,13 @@ new class extends Component
     $unreadCount = auth()->user()->unreadNotifications()->count();
 @endphp
 
-<nav class="border-b border-fm-border bg-fm-bg sticky top-0 z-50" x-data="{ mobileOpen: false }" @keydown.escape.window="mobileOpen = false">
+<nav
+    class="border-b border-fm-border bg-fm-bg sticky top-0 z-50"
+    x-data="{ mobileOpen: false }"
+    @keydown.escape.window="mobileOpen = false"
+    @livewire:navigating.window="mobileOpen = false"
+    @click.outside="mobileOpen = false"
+>
     <div class="fm-container flex justify-between items-center h-nav gap-3">
         <div class="flex items-center gap-6 lg:gap-10 min-w-0">
             <x-fm.logo :href="route('dashboard')" wire:navigate size="sm" />
@@ -98,7 +104,6 @@ new class extends Component
         x-transition:leave-start="opacity-100 translate-y-0"
         x-transition:leave-end="opacity-0 -translate-y-2"
         class="lg:hidden border-t border-fm-border bg-fm-bg"
-        @click.outside="mobileOpen = false"
     >
         <div class="fm-container py-3 space-y-1 max-h-[calc(100dvh-var(--fm-nav-height))] overflow-y-auto">
             @foreach ($navLinks as $link)
